@@ -484,7 +484,12 @@
                     <div style="font-size: 0.75rem; color: var(--text-muted);" id="user-role">Assistenzarzt</div>
                 </div>
             </div>
-            <button class="btn-ghost" onclick="handleLogout()">Abmelden</button>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn-ghost" id="btn-notifications"
+                    style="display: none; padding: 0.5rem; font-size: 1.2rem;"
+                    onclick="requestNotificationPermissionUI()" title="Benachrichtigungen aktivieren">🔕</button>
+                <button class="btn-ghost" onclick="handleLogout()">Abmelden</button>
+            </div>
         </header>
 
         <div class="nav-tabs">
@@ -615,6 +620,7 @@
 
         // Notification State
         let lastSeenPostId = null;
+        let previousRepliesCount = {};
 
         // INITIAL LOAD
         async function init() {
@@ -784,8 +790,23 @@
         }
 
         function requestNotificationPermission() {
-            if ('Notification' in window && Notification.permission === 'default') {
-                Notification.requestPermission();
+            if (!('Notification' in window)) return;
+            if (Notification.permission === 'default') {
+                document.getElementById('btn-notifications').style.display = 'block';
+            } else {
+                document.getElementById('btn-notifications').style.display = 'none';
+            }
+        }
+
+        async function requestNotificationPermissionUI() {
+            if ('Notification' in window) {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    document.getElementById('btn-notifications').style.display = 'none';
+                    alert('Benachrichtigungen wurden aktiviert!');
+                } else {
+                    alert('Benachrichtigungen wurden abgelehnt. Du kannst dies in den Browser-Einstellungen ändern.');
+                }
             }
         }
 
@@ -800,25 +821,49 @@
         async function loadBoard() {
             const container = document.getElementById('posts-container');
             try {
-                const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.CHAT_BIN}/latest`, {
-                    headers: { 'X-Master-Key': CONFIG.API_KEY }
+                const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.CHAT_BIN}/latest?t=${Date.now()}`, {
+                    headers: { 'X-Master-Key': CONFIG.API_KEY, 'Cache-Control': 'no-cache' }
                 });
                 const data = await res.json();
                 const newPosts = data.record.posts || [];
 
-                // Check for new posts to notify
-                if (lastSeenPostId && newPosts.length > 0) {
-                    const latestPost = newPosts[newPosts.length - 1];
-                    if (latestPost.id > lastSeenPostId && latestPost.authorId !== (currentUser.id || currentUser.mitarbeiter_id)) {
-                        const postGroup = latestPost.tags && latestPost.tags[0];
-                        if (currentUser.role === 'Administrator' || isUserInDienstGroup(postGroup, latestPost.targetDate)) {
-                            notifyNewPost(latestPost);
+                if (lastSeenPostId) {
+                    newPosts.forEach(post => {
+                        const isAuthor = String(post.authorId) === String(currentUser.id || currentUser.mitarbeiter_id);
+
+                        // Newly added post
+                        if (post.id > lastSeenPostId && !isAuthor) {
+                            const postGroup = post.tags && post.tags[0];
+                            if (currentUser.role === 'Administrator' || !postGroup || isUserInDienstGroup(postGroup, post.targetDate)) {
+                                notifyNewPost(post, false);
+                            }
                         }
-                    }
+
+                        // Newly added replies
+                        const currentRepliesCount = (post.replies || []).length;
+                        const prevRepliesCount = previousRepliesCount[post.id] || 0;
+                        if (currentRepliesCount > prevRepliesCount) {
+                            const newReply = post.replies[currentRepliesCount - 1];
+                            const isReplyAuthor = newReply.authorName === (currentUser.name || currentUser.mitarbeiter_name);
+                            if (!isReplyAuthor) {
+                                if (isAuthor || currentUser.role === 'Administrator') {
+                                    notifyNewPost(post, true, newReply);
+                                }
+                            }
+                        }
+
+                        previousRepliesCount[post.id] = currentRepliesCount;
+                    });
+                } else {
+                    // Initialize replies counts on first load
+                    newPosts.forEach(post => {
+                        previousRepliesCount[post.id] = (post.replies || []).length;
+                    });
                 }
 
                 if (newPosts.length > 0) {
-                    lastSeenPostId = newPosts[newPosts.length - 1].id;
+                    const maxId = Math.max(...newPosts.map(p => p.id));
+                    lastSeenPostId = lastSeenPostId ? Math.max(lastSeenPostId, maxId) : maxId;
                 }
 
                 posts = newPosts;
@@ -828,12 +873,20 @@
             }
         }
 
-        function notifyNewPost(post) {
+        function notifyNewPost(post, isReply = false, replyData = null) {
             if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
             const group = post.tags && post.tags[0] ? ` (${post.tags[0]})` : '';
-            const notification = new Notification(post.authorName + group, {
-                body: post.title,
+            let title = post.authorName + group;
+            let body = post.title;
+
+            if (isReply && replyData) {
+                title = `Neue Antwort von ${replyData.authorName}`;
+                body = `Zu: ${post.title}\n"${replyData.body}"`;
+            }
+
+            const notification = new Notification(title, {
+                body: body,
                 icon: 'icon_tight_192.png'
             });
 
