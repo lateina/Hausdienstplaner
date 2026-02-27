@@ -987,8 +987,8 @@
                 const group = document.createElement('optgroup');
                 group.label = categoryLabel;
                 Object.keys(distributions).forEach(key => {
-                    // Skip technical groups
-                    if (['pool', 'excluded'].includes(key)) return;
+                    // Skip technical groups and non-service groups
+                    if (['pool', 'excluded'].includes(key) || key.startsWith('Wegen Schichtdienst')) return;
                     const opt = document.createElement('option');
                     opt.value = labels[key] || key;
                     opt.textContent = labels[key] || key;
