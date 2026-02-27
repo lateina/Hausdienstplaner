@@ -1013,6 +1013,7 @@
         async function deletePost(postId) {
             const post = posts.find(p => p.id === postId);
             if (!post) return;
+            const isAdmin = currentUser.role === 'Administrator';
             const currentUserId = String(currentUser.id || currentUser.mitarbeiter_id);
             const isAuthor = String(post.authorId) === currentUserId;
 
