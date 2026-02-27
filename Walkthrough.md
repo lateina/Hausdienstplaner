@@ -13,11 +13,16 @@ The Hausdienstchat is a lightweight, secure message board designed for assistant
 - Supports subjects, message bodies, and tagging specific service groups (e.g., "Station 46").
 - Doctors can reply to posts to discuss potential swaps.
 
-### 3. Dienstgruppen View
+### 3. Sharing & Communication
+- **WhatsApp Sharing**: Instantly share swap requests to WhatsApp groups with a formatted text and deep-link.
+- **Smart Email Pre-filling**: When sharing via Email, the app automatically identifies the group members scheduled for the specific **target date** of the swap and pre-fills their email addresses in the "To" field.
+- **Deep Linking**: Links to posts open the app and automatically scroll to the specific entry.
+
+### 4. Dienstgruppen View
 - Displays the current distribution of employees across various stations and service groups.
 - Data is pulled from the planer distribution bin, ensuring doctors always see the most up-to-date assignments.
 
-### 4. Admin Monitoring
+### 5. Admin Monitoring
 - Users with the "Administrator" role can:
     - Oversee all posts and comments.
     - Mark new posts as "Gelesen" (Seen) with a visual indicator.

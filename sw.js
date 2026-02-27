@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hausdienst-v1';
+const CACHE_NAME = 'dienste-chat-v1';
 const ASSETS = [
   './index.html',
   './manifest.json'
