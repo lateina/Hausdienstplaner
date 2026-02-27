@@ -1,6 +1,6 @@
 {
-  "name": "Hausdienst-Chat Med II",
-  "short_name": "Hausdienst",
+  "name": "Dienste-Chat Med II",
+  "short_name": "Dienste-Chat",
   "description": "Nachrichtenboard für Assistenzärzte zur Koordination von Hausdiensten.",
   "start_url": "./index.html",
   "display": "standalone",
