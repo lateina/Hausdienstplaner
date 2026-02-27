@@ -1074,14 +1074,26 @@
 
                 const nameCheck = (n) => {
                     if (!n) return false;
-                    const nameString = (typeof n === 'object' ? (n.name || n.mitarbeiter_name || "") : String(n)).trim().toLowerCase().replace(/,/g, '');
-                    if (!nameString) return false;
-                    // Exact match or full word match to prevent "Bienen" matching "Bienert"
-                    const nameWords = nameString.split(/\s+/);
-                    const userWords = currentName.split(/\s+/);
-                    return nameString === currentName ||
-                        userWords.every(word => nameString.includes(word)) ||
-                        nameWords.every(word => currentName.includes(word));
+                    const normalize = (str) => {
+                        return String(str)
+                            .toLowerCase()
+                            .replace(/\(.*\)/g, '') // Remove everything in parentheses
+                            .replace(/,/g, ' ')      // Commas as spaces
+                            .replace(/\s+/g, ' ')    // Normalize whitespace
+                            .trim();
+                    };
+
+                    const cleanDistName = normalize(typeof n === 'object' ? (n.name || n.mitarbeiter_name || "") : n);
+                    const cleanUserName = normalize(currentName);
+
+                    if (!cleanDistName || !cleanUserName) return false;
+                    if (cleanDistName === cleanUserName) return true;
+
+                    const distWords = cleanDistName.split(' ').filter(w => w.length > 2);
+                    const userWords = cleanUserName.split(' ').filter(w => w.length > 2);
+
+                    // If any significant word matches exactly (e.g. "Haiberger")
+                    return distWords.some(dw => userWords.some(uw => dw === uw));
                 };
 
                 // 1. Check specific group
