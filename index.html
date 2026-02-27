@@ -1000,10 +1000,7 @@
                 const card = document.createElement('div');
                 card.className = 'post-card';
                 card.id = `post-${post.id}`;
-                if (isAdmin && !post.adminSeen) {
-                    card.style.borderLeft = '4px solid var(--primary)';
-                    card.style.background = '#f5f7ff';
-                }
+
                 const repliesHtml = (post.replies || []).map(reply => `
                     <div style="margin-top: 0.8rem; padding-left: 1rem; border-left: 2px solid #e2e8f0; font-size: 0.85rem;">
                         <span style="font-weight: 600;">${reply.authorName}:</span> ${reply.body}
