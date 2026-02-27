@@ -655,9 +655,11 @@
             const select = document.getElementById('name-select');
             select.innerHTML = '<option value="" disabled selected>Mitarbeiter wählen...</option>';
             employees.forEach(emp => {
+                const name = emp.name || emp.mitarbeiter_name;
+                if (name === 'Sekretariat') return;
                 const opt = document.createElement('option');
                 opt.value = emp.id || emp.mitarbeiter_id;
-                opt.textContent = emp.name || emp.mitarbeiter_name;
+                opt.textContent = name;
                 select.appendChild(opt);
             });
         }
