@@ -890,6 +890,11 @@
                 const record = data.record;
                 groupsState[type].months = record.months || [];
 
+                // Fix: Ensure monat_id exists for all months to prevent tab overlapping
+                groupsState[type].months.forEach((m, idx) => {
+                    if (!m.monat_id) m.monat_id = m.name || `month_${idx}`;
+                });
+
                 if (groupsState[type].months.length > 0) {
                     const now = new Date();
                     const monthId = `month_${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -912,7 +917,8 @@
             container.innerHTML = '';
             groupsState[type].months.forEach(month => {
                 const tab = document.createElement('div');
-                tab.className = `month-tab ${month.monat_id === activeId ? 'active' : ''}`;
+                const isActive = activeId && month.monat_id === activeId;
+                tab.className = `month-tab ${isActive ? 'active' : ''}`;
                 tab.textContent = month.name || month.monat_id;
                 tab.onclick = () => {
                     renderGroupTabs(type, month.monat_id);
