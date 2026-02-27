@@ -727,16 +727,16 @@
                 `).join('');
                 const dateStr = post.targetDate ? `<div style="margin-bottom: 0.5rem; color: var(--primary); font-weight: 600;">📅 Tausch für: ${new Date(post.targetDate).toLocaleDateString('de-DE')}</div>` : '';
                 card.innerHTML = `
-                    <div class="post-header">
+                    ${post.tags?.length ? `<div class="post-tags" style="margin-bottom: 0.5rem;">${post.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : ''}
+                    <div class="post-title" style="margin-bottom: 0.25rem;">${post.title}</div>
+                    ${dateStr}
+                    <div class="post-header" style="margin-top: 0.75rem; border-top: 1px solid #f1f5f9; padding-top: 0.5rem; margin-bottom: 1rem;">
                         <span class="author">${post.authorName}</span>
                         <span class="timestamp">${new Date(post.createdAt).toLocaleString('de-DE')}</span>
                     </div>
-                    ${dateStr}
-                    <div class="post-title">${post.title}</div>
-                    ${post.tags?.length ? `<div class="post-tags">${post.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : ''}
                     <div class="post-body">${post.body.replace(/\n/g, '<br>')}</div>
                     <div>${repliesHtml}</div>
-                    <div class="post-actions">
+                    <div class="post-actions" style="margin-top: 1.5rem;">
                         <span class="action-link" onclick="openReplyModal(${post.id})">Antworten</span>
                         <span class="action-link" style="color: #059669" onclick="sharePost(${post.id})">WhatsApp</span>
                         <span class="action-link" style="color: #6366f1" onclick="shareByEmail(${post.id})">Email</span>
