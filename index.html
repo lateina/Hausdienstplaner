@@ -398,6 +398,32 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Settings Overlay */
+        #setup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.98);
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .setup-card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
     </style>
 </head>
 
@@ -575,36 +601,49 @@
 
         // INITIAL LOAD
         async function init() {
-            // Check for Deep Link
             const urlParams = new URLSearchParams(window.location.search);
             const targetPostId = urlParams.get('post');
 
             if (!CONFIG.API_KEY) {
-                const key = prompt("Bitte JSONBin API-Key eingeben:");
-                if (key) {
-                    CONFIG.API_KEY = key;
-                    localStorage.setItem('hc-api-key', key);
-                } else {
-                    showStatus("API-Key erforderlich. Bitte Seite neu laden oder unten klicken.", true);
-                    return;
-                }
+                showSetup();
+                return;
             }
+
             await loadEmployees();
             const saved = localStorage.getItem('hc-user');
             if (saved) {
                 try {
                     currentUser = JSON.parse(saved);
-                    // Verify user still exists in employees list
                     const exists = employees.find(e => (e.id || e.mitarbeiter_id) == (currentUser.id || currentUser.mitarbeiter_id));
                     if (exists) {
                         setupApp();
                         if (targetPostId) {
                             setTimeout(() => { scrollToPost(targetPostId); }, 1000);
                         }
-                    }
-                    else { localStorage.removeItem('hc-user'); }
+                    } else { localStorage.removeItem('hc-user'); }
                 } catch (e) { localStorage.removeItem('hc-user'); }
             }
+        }
+
+        function showSetup() {
+            document.getElementById('master-key-input').value = CONFIG.API_KEY;
+            document.getElementById('setup-overlay').style.display = 'flex';
+        }
+
+        function hideSetup() {
+            document.getElementById('setup-overlay').style.display = 'none';
+        }
+
+        function saveSetup() {
+            const key = document.getElementById('master-key-input').value.trim();
+            if (!key) {
+                alert("Master-Key ist erforderlich.");
+                return;
+            }
+            CONFIG.API_KEY = key;
+            localStorage.setItem('hc-api-key', key);
+            hideSetup();
+            init();
         }
 
         function scrollToPost(id) {
