@@ -674,6 +674,14 @@
         let employees = [];
         let posts = [];
 
+        // Helper to check if current user is admin
+        function isCurrentUserAdmin() {
+            if (!currentUser) return false;
+            const name = (currentUser.name || currentUser.mitarbeiter_name || "");
+            const role = (currentUser.role || "");
+            return role === 'Administrator' || name === 'Administrator';
+        }
+
         // Group State
         const groupsState = {
             hausdienst: { months: [], currentMonth: null, distributions: {} },
@@ -891,7 +899,7 @@
                         // Newly added post
                         if (post.id > lastSeenPostId && !isAuthor) {
                             const postGroup = post.tags && post.tags[0];
-                            if (currentUser.role === 'Administrator' || !postGroup || isUserInDienstGroup(postGroup, post.targetDate)) {
+                            if (isCurrentUserAdmin() || !postGroup || isUserInDienstGroup(postGroup, post.targetDate)) {
                                 notifyNewPost(post, false);
                             }
                         }
@@ -903,7 +911,7 @@
                             const newReply = post.replies[currentRepliesCount - 1];
                             const isReplyAuthor = newReply.authorName === (currentUser.name || currentUser.mitarbeiter_name);
                             if (!isReplyAuthor) {
-                                if (isAuthor || currentUser.role === 'Administrator') {
+                                if (isAuthor || isCurrentUserAdmin()) {
                                     notifyNewPost(post, true, newReply);
                                 }
                             }
@@ -959,7 +967,7 @@
 
             const showOnlyRelevant = document.getElementById('filter-relevant-checkbox')?.checked;
             const currentUserId = currentUser ? String(currentUser.id || currentUser.mitarbeiter_id) : null;
-            const isAdmin = currentUser && currentUser.role === 'Administrator';
+            const isAdmin = isCurrentUserAdmin();
 
             let displayPosts = posts;
 
@@ -1013,12 +1021,12 @@
                     <div>${repliesHtml}</div>
                     <div class="post-actions" style="margin-top: 1.5rem;">
                         <span class="action-link" onclick="openReplyModal(${post.id})">Antworten</span>
-                        ${isAdmin || String(post.authorId) === String(currentUser.id || currentUser.mitarbeiter_id) ? `
+                        ${isAdmin || String(post.authorId) === currentUserId ? `
                             <span class="action-link" style="color: #059669" onclick="sharePost(${post.id})">WhatsApp</span>
                             <span class="action-link" style="color: #6366f1" onclick="shareByEmail(${post.id})">Email</span>
                         ` : ''}
                         ${isAdmin ? `<span class="action-link" onclick="markAsSeen(${post.id})">${post.adminSeen ? '✓ Gelesen' : 'Als gelesen markieren'}</span>` : ''}
-                        ${isAdmin || String(post.authorId) === String(currentUser.id || currentUser.mitarbeiter_id) ? `<span class="action-link" style="color: #ef4444" onclick="deletePost(${post.id})">Löschen</span>` : ''}
+                        ${isAdmin || String(post.authorId) === currentUserId ? `<span class="action-link" style="color: #ef4444" onclick="deletePost(${post.id})">Löschen</span>` : ''}
                     </div>
                 `;
                 container.appendChild(card);
@@ -1037,7 +1045,7 @@
 
         function isUserInDienstGroup(groupLabel, targetDate) {
             if (!currentUser) return false;
-            if (currentUser.role === 'Administrator') return true;
+            if (isCurrentUserAdmin()) return true;
             if (!groupLabel) return false;
 
             for (const type of ['hausdienst', 'visits']) {
@@ -1387,7 +1395,7 @@
         async function deletePost(postId) {
             const post = posts.find(p => p.id === postId);
             if (!post) return;
-            const isAdmin = currentUser.role === 'Administrator';
+            const isAdmin = isCurrentUserAdmin();
             const currentUserId = String(currentUser.id || currentUser.mitarbeiter_id);
             const isAuthor = String(post.authorId) === currentUserId;
 
