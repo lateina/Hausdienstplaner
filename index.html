@@ -1052,32 +1052,56 @@
             if (isCurrentUserAdmin()) return true;
             if (!groupLabel) return false;
 
+            const currentName = (currentUser.name || currentUser.mitarbeiter_name || "").toLowerCase().replace(/,/g, '').trim();
+
             for (const type of ['hausdienst', 'visits']) {
                 const state = groupsState[type];
                 let distributions = state.distributions;
 
                 if (targetDate) {
                     const dateObj = new Date(targetDate);
-                    const monatId = `month_${dateObj.getFullYear()}_${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
-                    const month = state.months.find(m => m.monat_id === monatId) ||
-                        state.months.find(m => m.monat_id.startsWith(`month_${dateObj.getFullYear()}`));
-                    if (month && month.assignments) distributions = month.assignments;
+                    if (!isNaN(dateObj.getTime())) {
+                        const monatId = `month_${dateObj.getFullYear()}_${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+                        const month = state.months.find(m => m.monat_id === monatId);
+                        if (month && month.assignments) distributions = month.assignments;
+                    }
                 }
 
                 const reverseLabels = {
                     'Station 46': 'visite_46', 'Station 18': 'visite_18', 'Station 19': 'visite_19'
                 };
                 const searchKey = reverseLabels[groupLabel] || groupLabel;
-                const assigned = distributions[searchKey];
 
+                const nameCheck = (n) => {
+                    if (!n) return false;
+                    const nameString = (typeof n === 'object' ? (n.name || n.mitarbeiter_name || "") : String(n)).trim().toLowerCase().replace(/,/g, '');
+                    if (!nameString) return false;
+                    // Exact match or full word match to prevent "Bienen" matching "Bienert"
+                    const nameWords = nameString.split(/\s+/);
+                    const userWords = currentName.split(/\s+/);
+                    return nameString === currentName ||
+                        userWords.every(word => nameString.includes(word)) ||
+                        nameWords.every(word => currentName.includes(word));
+                };
+
+                // 1. Check specific group
+                const assigned = distributions[searchKey];
                 if (assigned) {
                     const names = Array.isArray(assigned) ? assigned : [assigned];
-                    const currentName = (currentUser.name || currentUser.mitarbeiter_name || "").toLowerCase().replace(/,/g, '').trim();
-                    const isMember = names.some(n => {
-                        const nameString = (typeof n === 'object' ? (n.name || n.mitarbeiter_name) : n).trim().toLowerCase().replace(/,/g, '');
-                        return nameString === currentName || nameString.includes(currentName) || currentName.includes(nameString);
-                    });
-                    if (isMember) return true;
+                    if (names.some(nameCheck)) return true;
+                }
+
+                // 2. Check Pool (Springer) - they see everything in their category
+                const pool = distributions['pool'];
+                if (pool) {
+                    const poolNames = Array.isArray(pool) ? pool : [pool];
+                    if (poolNames.some(nameCheck)) {
+                        const catGroups = {
+                            hausdienst: ['1. Hausdienst', '2. Hausdienst', '3. Hausdienst', 'Echo-Hintergrund', 'Broncho-Hintergrund'],
+                            visits: ['Station 46', 'Station 18', 'Station 19']
+                        };
+                        if ((catGroups[type] || []).includes(groupLabel)) return true;
+                    }
                 }
             }
             return false;
