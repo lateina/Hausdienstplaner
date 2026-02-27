@@ -863,13 +863,13 @@
             const to = [...new Set(recipients)].join(',');
             const dateInfo = post.targetDate ? ` am ${new Date(post.targetDate).toLocaleDateString('de-DE')}` : '';
             const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
-            const subject = encodeURIComponent(`Hausdienst-Tausch am ${post.targetDate ? new Date(post.targetDate).toLocaleDateString('de-DE') : post.title}`);
+            const subject = encodeURIComponent(`Dienst-Tausch am ${post.targetDate ? new Date(post.targetDate).toLocaleDateString('de-DE') : post.title}`);
             const body = encodeURIComponent(
                 `Hallo zusammen,\n\n` +
-                `ich suche einen Tauschpartner für meinen Hausdienst am ${post.targetDate ? new Date(post.targetDate).toLocaleDateString('de-DE') : 'einem noch offenen Datum'}.\n\n` +
+                `ich suche einen Tauschpartner für meinen Dienst am ${post.targetDate ? new Date(post.targetDate).toLocaleDateString('de-DE') : 'einem noch offenen Datum'}.\n\n` +
                 `Details zum Dienst:\n` +
                 `Datum: ${post.targetDate ? new Date(post.targetDate).toLocaleDateString('de-DE') : 'Siehe Link'}\n` +
-                `Gruppe: ${groupName || 'Hausdienst'}\n` +
+                `Gruppe: ${groupName || 'Dienst'}\n` +
                 `Info: ${post.title}\n\n` +
                 `Könnte jemand von euch tauschen? Ihr könnt mir direkt hier im Tool antworten:\n` +
                 `${shareUrl}\n\n` +
