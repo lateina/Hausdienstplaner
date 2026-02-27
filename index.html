@@ -441,7 +441,10 @@
                     <div style="font-size: 0.75rem; color: var(--text-muted);" id="user-role">Assistenzarzt</div>
                 </div>
             </div>
-            <button class="btn-ghost" onclick="handleLogout()">Abmelden</button>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn-ghost" title="Benachrichtigung testen" onclick="testNotification()">🔔</button>
+                <button class="btn-ghost" onclick="handleLogout()">Abmelden</button>
+            </div>
         </header>
 
         <div class="nav-tabs">
@@ -1265,7 +1268,8 @@
         setInterval(() => {
             if (currentUser) {
                 loadBoard();
-                loadGroups();
+                loadGroups('hausdienst', CONFIG.DISTRIBUTION_BIN);
+                loadGroups('visits', CONFIG.VISITS_BIN);
             }
         }, 60000);
     </script>
