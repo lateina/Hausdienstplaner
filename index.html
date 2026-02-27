@@ -502,9 +502,15 @@
                 <label>Betreff</label>
                 <input type="text" id="post-title-input" placeholder="z. B. Dienst übernehmen">
             </div>
-            <div class="form-group">
-                <label>Dienst-Datum</label>
-                <input type="date" id="post-date-input">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label>Dienst-Datum</label>
+                    <input type="date" id="post-date-input">
+                </div>
+                <div class="form-group">
+                    <label>Bis-Datum (Optional)</label>
+                    <input type="date" id="post-end-date-input">
+                </div>
             </div>
             <div class="form-group">
                 <label>Dienstgruppe</label>
@@ -759,11 +765,16 @@
                         <div style="font-size: 0.7rem; color: var(--text-muted);">${new Date(reply.createdAt).toLocaleString('de-DE')}</div>
                     </div>
                 `).join('');
-                const dateStr = post.targetDate ? `<div style="margin-bottom: 0.5rem; color: var(--primary); font-weight: 600;">📅 Dienst am: ${new Date(post.targetDate).toLocaleDateString('de-DE')}</div>` : '';
+                const dateParts = [];
+                if (post.targetDate) dateParts.push(new Date(post.targetDate).toLocaleDateString('de-DE'));
+                if (post.endDate) dateParts.push(new Date(post.endDate).toLocaleDateString('de-DE'));
+                const dateRangeStr = dateParts.length === 2 ? `${dateParts[0]} - ${dateParts[1]}` : (dateParts[0] || '');
+                const dateHtml = dateRangeStr ? `<div style="margin-bottom: 0.5rem; color: var(--primary); font-weight: 600;">📅 Dienst am: ${dateRangeStr}</div>` : '';
+
                 card.innerHTML = `
                     ${post.tags?.length ? `<div class="post-tags" style="margin-bottom: 0.5rem;">${post.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : ''}
                     <div class="post-title" style="margin-bottom: 0.25rem;">${post.title}</div>
-                    ${dateStr}
+                    ${dateHtml}
                     <div class="post-header" style="margin-top: 0.75rem; border-top: 1px solid #f1f5f9; padding-top: 0.5rem; margin-bottom: 1rem;">
                         <span class="author">${post.authorName}</span>
                         <span class="timestamp">${new Date(post.createdAt).toLocaleString('de-DE')}</span>
@@ -860,15 +871,20 @@
                 }
             }
 
+            const dateParts = [];
+            if (post.targetDate) dateParts.push(new Date(post.targetDate).toLocaleDateString('de-DE'));
+            if (post.endDate) dateParts.push(new Date(post.endDate).toLocaleDateString('de-DE'));
+            const dateRangeStr = dateParts.length === 2 ? `${dateParts[0]} - ${dateParts[1]}` : (dateParts[0] || '');
+            const dateSubject = dateRangeStr ? `am ${dateRangeStr}` : post.title;
+
             const to = [...new Set(recipients)].join(',');
-            const dateInfo = post.targetDate ? ` am ${new Date(post.targetDate).toLocaleDateString('de-DE')}` : '';
             const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
-            const subject = encodeURIComponent(`Dienst-Tausch am ${post.targetDate ? new Date(post.targetDate).toLocaleDateString('de-DE') : post.title}`);
+            const subject = encodeURIComponent(`Dienst-Tausch ${dateSubject}`);
             const body = encodeURIComponent(
                 `Hallo zusammen,\n\n` +
-                `ich suche einen Tauschpartner für meinen Dienst am ${post.targetDate ? new Date(post.targetDate).toLocaleDateString('de-DE') : 'einem noch offenen Datum'}.\n\n` +
+                `ich suche einen Tauschpartner für meinen Dienst am ${dateRangeStr || 'einem noch offenen Datum'}.\n\n` +
                 `Details zum Dienst:\n` +
-                `Datum: ${post.targetDate ? new Date(post.targetDate).toLocaleDateString('de-DE') : 'Siehe Link'}\n` +
+                `Datum: ${dateRangeStr || 'Siehe Link'}\n` +
                 `Gruppe: ${groupName || 'Dienst'}\n` +
                 `Info: ${post.title}\n\n` +
                 `Könnte jemand von euch tauschen? Ihr könnt mir direkt hier im Tool antworten:\n` +
@@ -1028,15 +1044,21 @@
             const title = document.getElementById('post-title-input').value;
             const group = document.getElementById('post-group-tag').value;
             const date = document.getElementById('post-date-input').value;
+            const endDate = document.getElementById('post-end-date-input').value;
             const body = document.getElementById('post-body-input').value;
+
             if (!title && !body) { alert("Bitte Betreff und Nachricht ausfüllen."); return; }
             if (!title) { alert("Bitte einen Betreff eingeben."); return; }
             if (!body) { alert("Bitte eine Nachricht eingeben."); return; }
+
             const newPost = {
                 id: Date.now(),
                 authorId: currentUser.id || currentUser.mitarbeiter_id,
                 authorName: currentUser.name || currentUser.mitarbeiter_name,
-                title, body, targetDate: date, tags: group ? [group] : [],
+                title, body,
+                targetDate: date,
+                endDate: endDate,
+                tags: group ? [group] : [],
                 createdAt: new Date().toISOString(),
                 replies: [], adminSeen: false
             };
@@ -1047,6 +1069,7 @@
             document.getElementById('post-title-input').value = '';
             document.getElementById('post-group-tag').value = '';
             document.getElementById('post-date-input').value = '';
+            document.getElementById('post-end-date-input').value = '';
             document.getElementById('post-body-input').value = '';
 
             closeModal();
