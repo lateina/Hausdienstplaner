@@ -766,100 +766,101 @@
                 document.body.removeChild(dummy);
                 alert("Teilen-Link wurde in die Zwischenablage kopiert!");
             }
+        }
 
-            async function shareByEmail(postId) {
-                const post = posts.find(p => p.id === postId);
-                if (!post) return;
+        async function shareByEmail(postId) {
+            const post = posts.find(p => p.id === postId);
+            if (!post) return;
 
-                const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
-                const subject = encodeURIComponent(`Hausdienst-Tauschwunsch: ${post.title}`);
-                const body = encodeURIComponent(`Hallo,\n\n${post.authorName} sucht einen Tausch für: "${post.title}"\n\nDetails und Antwort hier im Tool:\n${shareUrl}`);
+            const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
+            const subject = encodeURIComponent(`Hausdienst-Tauschwunsch: ${post.title}`);
+            const body = encodeURIComponent(`Hallo,\n\n${post.authorName} sucht einen Tausch für: "${post.title}"\n\nDetails und Antwort hier im Tool:\n${shareUrl}`);
 
-                window.location.href = `mailto:?subject=${subject}&body=${body}`;
-            }
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        }
 
-            // GROUPS
-            async function loadGroups() {
-                const container = document.getElementById('groups-container');
-                container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Lade Dienstgruppen...</div>';
-                try {
-                    const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.DISTRIBUTION_BIN}/latest`, {
-                        headers: { 'X-Master-Key': CONFIG.API_KEY }
-                    });
-                    const data = await res.json();
-                    if (!res.ok) {
-                        throw new Error(data.message || `HTTP ${res.status}`);
-                    }
-
-                    const record = data.record;
-                    monthsData = record.months || [];
-
-                    if (monthsData.length > 0) {
-                        // Find current month or take first
-                        const now = new Date();
-                        const monthId = `month_${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}`;
-                        const initialMonth = monthsData.find(m => m.monat_id === monthId) || monthsData[0];
-                        renderMonthTabs(initialMonth.monat_id);
-                        selectMonth(initialMonth.monat_id);
-                    } else {
-                        distributions = record.assignments || record || {};
-                        renderGroups();
-                    }
-                } catch (e) {
-                    console.error("Error loading groups", e);
-                    container.innerHTML = `<div style="color: #ef4444; padding: 20px;">Fehler beim Laden der Gruppen: ${e.message}</div>`;
-                }
-            }
-
-            function renderMonthTabs(activeId) {
-                const container = document.getElementById('month-tabs-container');
-                container.innerHTML = '';
-                monthsData.forEach(month => {
-                    const tab = document.createElement('div');
-                    tab.className = `month-tab ${month.monat_id === activeId ? 'active' : ''}`;
-                    tab.textContent = month.name || month.monat_id;
-                    tab.onclick = () => {
-                        renderMonthTabs(month.monat_id);
-                        selectMonth(month.monat_id);
-                    };
-                    container.appendChild(tab);
+        // GROUPS
+        async function loadGroups() {
+            const container = document.getElementById('groups-container');
+            container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Lade Dienstgruppen...</div>';
+            try {
+                const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.DISTRIBUTION_BIN}/latest`, {
+                    headers: { 'X-Master-Key': CONFIG.API_KEY }
                 });
-            }
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.message || `HTTP ${res.status}`);
+                }
 
-            function selectMonth(monthId) {
-                const month = monthsData.find(m => m.monat_id === monthId);
-                if (month) {
-                    distributions = month.assignments || {};
-                    document.getElementById('distribution-status').textContent = `Planung für ${month.name || month.monat_id}`;
+                const record = data.record;
+                monthsData = record.months || [];
+
+                if (monthsData.length > 0) {
+                    // Find current month or take first
+                    const now = new Date();
+                    const monthId = `month_${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}`;
+                    const initialMonth = monthsData.find(m => m.monat_id === monthId) || monthsData[0];
+                    renderMonthTabs(initialMonth.monat_id);
+                    selectMonth(initialMonth.monat_id);
+                } else {
+                    distributions = record.assignments || record || {};
                     renderGroups();
                 }
+            } catch (e) {
+                console.error("Error loading groups", e);
+                container.innerHTML = `<div style="color: #ef4444; padding: 20px;">Fehler beim Laden der Gruppen: ${e.message}</div>`;
             }
+        }
 
-            function renderGroups() {
-                const container = document.getElementById('groups-container');
-                container.innerHTML = '';
-                const labels = {
-                    'visite_46': 'Station 46',
-                    'visite_18': 'Station 18',
-                    'visite_19': 'Station 19',
-                    '1. Hausdienst': '1. Hausdienst',
-                    '2. Hausdienst': '2. Hausdienst',
-                    '3. Hausdienst': '3. Hausdienst',
-                    'Echo-Hintergrund': 'Echo-Hintergrund',
-                    'Broncho-Hintergrund': 'Broncho-Hintergrund',
-                    'Kardio-Hintergrund': 'Kardio-Hintergrund',
-                    'pool': 'Pool / Springer',
-                    'excluded': 'Abwesend / Elternzeit'
+        function renderMonthTabs(activeId) {
+            const container = document.getElementById('month-tabs-container');
+            container.innerHTML = '';
+            monthsData.forEach(month => {
+                const tab = document.createElement('div');
+                tab.className = `month-tab ${month.monat_id === activeId ? 'active' : ''}`;
+                tab.textContent = month.name || month.monat_id;
+                tab.onclick = () => {
+                    renderMonthTabs(month.monat_id);
+                    selectMonth(month.monat_id);
                 };
-                Object.entries(distributions).forEach(([key, list]) => {
-                    const groupName = labels[key] || key;
-                    const card = document.createElement('div');
-                    card.className = 'group-card';
+                container.appendChild(tab);
+            });
+        }
 
-                    // Ensure list is an array for mapping
-                    const employeesList = Array.isArray(list) ? list : (list ? [list] : []);
+        function selectMonth(monthId) {
+            const month = monthsData.find(m => m.monat_id === monthId);
+            if (month) {
+                distributions = month.assignments || {};
+                document.getElementById('distribution-status').textContent = `Planung für ${month.name || month.monat_id}`;
+                renderGroups();
+            }
+        }
 
-                    card.innerHTML = `
+        function renderGroups() {
+            const container = document.getElementById('groups-container');
+            container.innerHTML = '';
+            const labels = {
+                'visite_46': 'Station 46',
+                'visite_18': 'Station 18',
+                'visite_19': 'Station 19',
+                '1. Hausdienst': '1. Hausdienst',
+                '2. Hausdienst': '2. Hausdienst',
+                '3. Hausdienst': '3. Hausdienst',
+                'Echo-Hintergrund': 'Echo-Hintergrund',
+                'Broncho-Hintergrund': 'Broncho-Hintergrund',
+                'Kardio-Hintergrund': 'Kardio-Hintergrund',
+                'pool': 'Pool / Springer',
+                'excluded': 'Abwesend / Elternzeit'
+            };
+            Object.entries(distributions).forEach(([key, list]) => {
+                const groupName = labels[key] || key;
+                const card = document.createElement('div');
+                card.className = 'group-card';
+
+                // Ensure list is an array for mapping
+                const employeesList = Array.isArray(list) ? list : (list ? [list] : []);
+
+                card.innerHTML = `
                     <div class="group-name">${groupName}</div>
                     <ul class="emp-list">
                         ${employeesList.map(emp => `
@@ -870,125 +871,125 @@
                         `).join('') || '<li style="color: #ccc; font-style: italic;">Keine Zuordnung</li>'}
                     </ul>
                 `;
-                    container.appendChild(card);
+                container.appendChild(card);
+            });
+        }
+
+        // MODALS
+        let currentReplyPostId = null;
+        function openModal(id) { document.getElementById(`modal-${id}`).style.display = 'flex'; }
+        function openReplyModal(postId) {
+            currentReplyPostId = postId;
+            const post = posts.find(p => p.id === postId);
+            document.getElementById('reply-modal-title').textContent = `Antwort an ${post.authorName}`;
+            openModal('reply');
+        }
+        function closeModal() {
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+            currentReplyPostId = null;
+        }
+
+        async function submitPost() {
+            const title = document.getElementById('post-title-input').value;
+            const group = document.getElementById('post-group-tag').value;
+            const body = document.getElementById('post-body-input').value;
+            if (!title || !body) { alert("Bitte ausfüllen."); return; }
+            const newPost = {
+                id: Date.now(),
+                authorId: currentUser.id || currentUser.mitarbeiter_id,
+                authorName: currentUser.name || currentUser.mitarbeiter_name,
+                title, body, tags: group ? [group] : [],
+                createdAt: new Date().toISOString(),
+                replies: [], adminSeen: false
+            };
+            posts.push(newPost);
+            await savePosts();
+            closeModal();
+            renderPosts();
+        }
+
+        async function submitReply() {
+            const body = document.getElementById('reply-body-input').value;
+            if (!body) return;
+            const post = posts.find(p => p.id === currentReplyPostId);
+            if (!post) return;
+            post.replies = post.replies || [];
+            post.replies.push({
+                authorName: currentUser.name || currentUser.mitarbeiter_name,
+                body, createdAt: new Date().toISOString()
+            });
+            await savePosts();
+            document.getElementById('reply-body-input').value = '';
+            closeModal();
+            renderPosts();
+        }
+
+        async function markAsSeen(postId) {
+            const post = posts.find(p => p.id === postId);
+            if (post) { post.adminSeen = true; await savePosts(); renderPosts(); }
+        }
+
+        async function deletePost(postId) {
+            const post = posts.find(p => p.id === postId);
+            if (!post) return;
+            const isAdmin = currentUser.role === 'Administrator';
+            const isAuthor = post.authorId === (currentUser.id || currentUser.mitarbeiter_id);
+
+            if (!isAdmin && !isAuthor) {
+                alert("Nur der Autor oder ein Administrator kann diesen Beitrag löschen.");
+                return;
+            }
+
+            if (!confirm("Beitrag unwiderruflich löschen?")) return;
+            posts = posts.filter(p => p.id !== postId);
+            await savePosts();
+            renderPosts();
+        }
+
+        function resetDistributionBin() {
+            const bin = prompt("Neue Verteilungs-Bin ID eingeben:", CONFIG.DISTRIBUTION_BIN);
+            if (bin) {
+                CONFIG.DISTRIBUTION_BIN = bin;
+                localStorage.setItem('hc-dist-bin', bin);
+                loadGroups();
+            }
+        }
+
+        function resetChatBin() {
+            const bin = prompt("Neue Chat-Bin ID eingeben:", CONFIG.CHAT_BIN);
+            if (bin) {
+                CONFIG.CHAT_BIN = bin;
+                localStorage.setItem('hc-chat-bin', bin);
+                if (currentUser) loadBoard();
+            }
+        }
+
+        async function savePosts() {
+            try {
+                await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.CHAT_BIN}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': CONFIG.API_KEY },
+                    body: JSON.stringify({ posts })
                 });
+            } catch (e) { alert("Speichern fehlgeschlagen."); }
+        }
+
+        init();
+
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed', err));
+            });
+        }
+
+        // Auto-Refresh every 60 seconds
+        setInterval(() => {
+            if (currentUser) {
+                loadBoard();
+                loadGroups();
             }
-
-            // MODALS
-            let currentReplyPostId = null;
-            function openModal(id) { document.getElementById(`modal-${id}`).style.display = 'flex'; }
-            function openReplyModal(postId) {
-                currentReplyPostId = postId;
-                const post = posts.find(p => p.id === postId);
-                document.getElementById('reply-modal-title').textContent = `Antwort an ${post.authorName}`;
-                openModal('reply');
-            }
-            function closeModal() {
-                document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-                currentReplyPostId = null;
-            }
-
-            async function submitPost() {
-                const title = document.getElementById('post-title-input').value;
-                const group = document.getElementById('post-group-tag').value;
-                const body = document.getElementById('post-body-input').value;
-                if (!title || !body) { alert("Bitte ausfüllen."); return; }
-                const newPost = {
-                    id: Date.now(),
-                    authorId: currentUser.id || currentUser.mitarbeiter_id,
-                    authorName: currentUser.name || currentUser.mitarbeiter_name,
-                    title, body, tags: group ? [group] : [],
-                    createdAt: new Date().toISOString(),
-                    replies: [], adminSeen: false
-                };
-                posts.push(newPost);
-                await savePosts();
-                closeModal();
-                renderPosts();
-            }
-
-            async function submitReply() {
-                const body = document.getElementById('reply-body-input').value;
-                if (!body) return;
-                const post = posts.find(p => p.id === currentReplyPostId);
-                if (!post) return;
-                post.replies = post.replies || [];
-                post.replies.push({
-                    authorName: currentUser.name || currentUser.mitarbeiter_name,
-                    body, createdAt: new Date().toISOString()
-                });
-                await savePosts();
-                document.getElementById('reply-body-input').value = '';
-                closeModal();
-                renderPosts();
-            }
-
-            async function markAsSeen(postId) {
-                const post = posts.find(p => p.id === postId);
-                if (post) { post.adminSeen = true; await savePosts(); renderPosts(); }
-            }
-
-            async function deletePost(postId) {
-                const post = posts.find(p => p.id === postId);
-                if (!post) return;
-                const isAdmin = currentUser.role === 'Administrator';
-                const isAuthor = post.authorId === (currentUser.id || currentUser.mitarbeiter_id);
-
-                if (!isAdmin && !isAuthor) {
-                    alert("Nur der Autor oder ein Administrator kann diesen Beitrag löschen.");
-                    return;
-                }
-
-                if (!confirm("Beitrag unwiderruflich löschen?")) return;
-                posts = posts.filter(p => p.id !== postId);
-                await savePosts();
-                renderPosts();
-            }
-
-            function resetDistributionBin() {
-                const bin = prompt("Neue Verteilungs-Bin ID eingeben:", CONFIG.DISTRIBUTION_BIN);
-                if (bin) {
-                    CONFIG.DISTRIBUTION_BIN = bin;
-                    localStorage.setItem('hc-dist-bin', bin);
-                    loadGroups();
-                }
-            }
-
-            function resetChatBin() {
-                const bin = prompt("Neue Chat-Bin ID eingeben:", CONFIG.CHAT_BIN);
-                if (bin) {
-                    CONFIG.CHAT_BIN = bin;
-                    localStorage.setItem('hc-chat-bin', bin);
-                    if (currentUser) loadBoard();
-                }
-            }
-
-            async function savePosts() {
-                try {
-                    await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.CHAT_BIN}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json', 'X-Master-Key': CONFIG.API_KEY },
-                        body: JSON.stringify({ posts })
-                    });
-                } catch (e) { alert("Speichern fehlgeschlagen."); }
-            }
-
-            init();
-
-            // Register Service Worker for PWA
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed', err));
-                });
-            }
-
-            // Auto-Refresh every 60 seconds
-            setInterval(() => {
-                if (currentUser) {
-                    loadBoard();
-                    loadGroups();
-                }
-            }, 60000);
+        }, 60000);
     </script>
 </body>
 
