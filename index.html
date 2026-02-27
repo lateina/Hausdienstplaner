@@ -831,6 +831,16 @@
             });
         }
 
+        function getDienstTyp(groupName) {
+            if (!groupName) return "Dienst";
+            if (groupName.includes("Station")) return "Visitendienst";
+            if (groupName.includes("Hausdienst")) return "Hausdienst";
+            if (groupName.includes("Echo")) return "Echohintergrund";
+            if (groupName.includes("Kardio")) return "Kardiohintergrund";
+            if (groupName.includes("Broncho")) return "Bronchohintergrund";
+            return "Dienst";
+        }
+
         async function sharePost(postId) {
             const post = posts.find(p => p.id === postId);
             if (!post) return;
@@ -840,9 +850,11 @@
             if (post.endDate) dateParts.push(new Date(post.endDate).toLocaleDateString('de-DE'));
             const dateRangeStr = dateParts.length === 2 ? `${dateParts[0]} - ${dateParts[1]}` : (dateParts[0] || '');
             const dateInfo = dateRangeStr ? ` am ${dateRangeStr}` : '';
+            const groupName = post.tags && post.tags[0];
+            const dienstTyp = getDienstTyp(groupName);
 
             const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
-            const shareText = `Hallo zusammen, ich suche einen Tauschpartner für meinen Dienst${dateInfo} ("${post.title}"). Könnte jemand einspringen? Infos und Antwort hier:`;
+            const shareText = `Hallo zusammen, ich suche einen Tauschpartner für meinen ${dienstTyp}${dateInfo} ("${post.title}"). Könnte jemand einspringen? Infos und Antwort hier:`;
 
             if (navigator.share) {
                 try {
@@ -918,14 +930,15 @@
             if (post.targetDate) dateParts.push(new Date(post.targetDate).toLocaleDateString('de-DE'));
             if (post.endDate) dateParts.push(new Date(post.endDate).toLocaleDateString('de-DE'));
             const dateRangeStr = dateParts.length === 2 ? `${dateParts[0]} - ${dateParts[1]}` : (dateParts[0] || '');
+            const dienstTyp = getDienstTyp(groupName);
             const dateSubject = dateRangeStr ? `am ${dateRangeStr}` : post.title;
 
             const to = [...new Set(recipients)].join(',');
             const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
-            const subject = encodeURIComponent(`Dienst-Tausch ${dateSubject}`);
+            const subject = encodeURIComponent(`${dienstTyp}-Tausch ${dateSubject}`);
             const body = encodeURIComponent(
                 `Hallo zusammen,\n\n` +
-                `ich suche einen Tauschpartner für meinen Dienst am ${dateRangeStr || 'einem noch offenen Datum'}.\n\n` +
+                `ich suche einen Tauschpartner für meinen ${dienstTyp} am ${dateRangeStr || 'einem noch offenen Datum'}.\n\n` +
                 `Details zum Dienst:\n` +
                 `Datum: ${dateRangeStr || 'Siehe Link'}\n` +
                 `Gruppe: ${groupName || 'Dienst'}\n` +
