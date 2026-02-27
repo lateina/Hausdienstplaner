@@ -477,6 +477,10 @@
                 <input type="text" id="post-title-input" placeholder="Z.B. Suche Tausch für 14.03.">
             </div>
             <div class="form-group">
+                <label>Tausch-Datum (Optional)</label>
+                <input type="date" id="post-date-input">
+            </div>
+            <div class="form-group">
                 <label>Dienstgruppe (Optional)</label>
                 <select id="post-group-tag">
                     <option value="">Keine Auswahl</option>
@@ -720,11 +724,13 @@
                         <div style="font-size: 0.7rem; color: var(--text-muted);">${new Date(reply.createdAt).toLocaleString('de-DE')}</div>
                     </div>
                 `).join('');
+                const dateStr = post.targetDate ? `<div style="margin-bottom: 0.5rem; color: var(--primary); font-weight: 600;">📅 Tausch für: ${new Date(post.targetDate).toLocaleDateString('de-DE')}</div>` : '';
                 card.innerHTML = `
                     <div class="post-header">
                         <span class="author">${post.authorName}</span>
                         <span class="timestamp">${new Date(post.createdAt).toLocaleString('de-DE')}</span>
                     </div>
+                    ${dateStr}
                     <div class="post-title">${post.title}</div>
                     ${post.tags?.length ? `<div class="post-tags">${post.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : ''}
                     <div class="post-body">${post.body.replace(/\n/g, '<br>')}</div>
@@ -745,8 +751,9 @@
             const post = posts.find(p => p.id === postId);
             if (!post) return;
 
+            const dateInfo = post.targetDate ? ` am ${new Date(post.targetDate).toLocaleDateString('de-DE')}` : '';
             const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
-            const shareText = `Hausdienst-Tauschwunsch von ${post.authorName}: "${post.title}". Details und Antwort hier im Tool:`;
+            const shareText = `Hausdienst-Tauschwunsch von ${post.authorName}${dateInfo}: "${post.title}". Details und Antwort hier im Tool:`;
 
             if (navigator.share) {
                 try {
@@ -772,11 +779,37 @@
             const post = posts.find(p => p.id === postId);
             if (!post) return;
 
-            const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
-            const subject = encodeURIComponent(`Hausdienst-Tauschwunsch: ${post.title}`);
-            const body = encodeURIComponent(`Hallo,\n\n${post.authorName} sucht einen Tausch für: "${post.title}"\n\nDetails und Antwort hier im Tool:\n${shareUrl}`);
+            let recipients = [];
+            if (post.targetDate && post.tags && post.tags.length > 0) {
+                const targetDate = new Date(post.targetDate);
+                const monatId = `month_${targetDate.getFullYear()}_${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
+                const groupName = post.tags[0];
 
-            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+                const month = monthsData.find(m => m.monat_id === monatId) ||
+                    monthsData.find(m => m.monat_id.startsWith(`month_${targetDate.getFullYear()}`)) ||
+                    monthsData[0];
+
+                if (month && month.assignments && month.assignments[groupName]) {
+                    const assignedNames = Array.isArray(month.assignments[groupName]) ?
+                        month.assignments[groupName] : [month.assignments[groupName]];
+
+                    assignedNames.forEach(name => {
+                        const cleanName = typeof name === 'object' ? (name.name || name.mitarbeiter_name) : name;
+                        const emp = employees.find(e => (e.name === cleanName || e.mitarbeiter_name === cleanName));
+                        if (emp && (emp.email || emp.mitarbeiter_email)) {
+                            recipients.push(emp.email || emp.mitarbeiter_email);
+                        }
+                    });
+                }
+            }
+
+            const to = [...new Set(recipients)].join(',');
+            const dateInfo = post.targetDate ? ` am ${new Date(post.targetDate).toLocaleDateString('de-DE')}` : '';
+            const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
+            const subject = encodeURIComponent(`Hausdienst-Tauschwunsch${dateInfo}: ${post.title}`);
+            const body = encodeURIComponent(`Hallo,\n\n${post.authorName} sucht einen Tausch für: "${post.title}"${dateInfo}\n\nDetails und Antwort hier im Tool:\n${shareUrl}`);
+
+            window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
         }
 
         // GROUPS
@@ -892,18 +925,26 @@
         async function submitPost() {
             const title = document.getElementById('post-title-input').value;
             const group = document.getElementById('post-group-tag').value;
+            const date = document.getElementById('post-date-input').value;
             const body = document.getElementById('post-body-input').value;
             if (!title || !body) { alert("Bitte ausfüllen."); return; }
             const newPost = {
                 id: Date.now(),
                 authorId: currentUser.id || currentUser.mitarbeiter_id,
                 authorName: currentUser.name || currentUser.mitarbeiter_name,
-                title, body, tags: group ? [group] : [],
+                title, body, targetDate: date, tags: group ? [group] : [],
                 createdAt: new Date().toISOString(),
                 replies: [], adminSeen: false
             };
             posts.push(newPost);
             await savePosts();
+
+            // Reset inputs
+            document.getElementById('post-title-input').value = '';
+            document.getElementById('post-group-tag').value = '';
+            document.getElementById('post-date-input').value = '';
+            document.getElementById('post-body-input').value = '';
+
             closeModal();
             renderPosts();
         }
