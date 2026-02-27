@@ -450,10 +450,27 @@
             <div id="login-status"
                 style="font-size: 0.8rem; margin-top: 1rem; color: var(--text-muted); display: none;">Lade
                 Mitarbeiter...</div>
-            <div id="login-error" style="color: #ef4444; font-size: 0.8rem; margin-top: 1rem; display: none;">PIN
-                ungültig.</div>
+            <div class="login-footer" style="margin-top: 20px; text-align: center;">
+                <a href="#" style="color: var(--text-muted); font-size: 0.85rem; text-decoration: none;"
+                    onclick="showSetup()">⚙️ Einstellungen</a>
+            </div>
+        </div>
+    </div>
 
-
+    <!-- Setup Overlay -->
+    <div id="setup-overlay">
+        <div class="setup-card">
+            <h2 style="margin-bottom: 8px;">Initial-Setup</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px;">
+                Bitte gib den Master-Key ein, um die Dienstpläne zu laden.
+            </p>
+            <div class="form-group" style="text-align: left;">
+                <label>Master-Key</label>
+                <input type="password" id="master-key-input" placeholder="Hier einfügen...">
+            </div>
+            <button class="btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="saveSetup()">Speichern &
+                Starten</button>
+            <button class="btn-ghost" style="width: 100%;" onclick="hideSetup()">Abbrechen</button>
         </div>
     </div>
 
