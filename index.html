@@ -845,11 +845,7 @@
             const roleEl = document.getElementById('user-role');
             roleEl.style.display = 'none';
 
-            await Promise.all([
-                loadBoard(),
-                loadGroups('hausdienst', CONFIG.DISTRIBUTION_BIN),
-                loadGroups('visits', CONFIG.VISITS_BIN)
-            ]);
+            await refreshContent();
 
             populateGroupSelect();
             requestNotificationPermission();
@@ -859,6 +855,19 @@
             if (filterContainer) {
                 filterContainer.style.display = isCurrentUserAdmin() ? 'none' : 'flex';
             }
+        }
+
+        async function refreshContent() {
+            const container = document.getElementById('posts-container');
+            if (!posts.length) container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Lade Einträge...</div>';
+
+            await Promise.all([
+                loadBoard(false),
+                loadGroups('hausdienst', CONFIG.DISTRIBUTION_BIN),
+                loadGroups('visits', CONFIG.VISITS_BIN)
+            ]);
+
+            renderPosts();
         }
 
         function requestNotificationPermission() {
@@ -890,8 +899,7 @@
         }
 
         // BOARD
-        async function loadBoard() {
-            const container = document.getElementById('posts-container');
+        async function loadBoard(shouldRender = true) {
             try {
                 const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.CHAT_BIN}/latest?t=${Date.now()}`, {
                     headers: { 'X-Master-Key': CONFIG.API_KEY, 'Cache-Control': 'no-cache' }
@@ -939,9 +947,11 @@
                 }
 
                 posts = newPosts;
-                renderPosts();
+                if (shouldRender) renderPosts();
             } catch (e) {
-                container.innerHTML = '<div style="color: #ef4444; padding: 20px;">Fehler beim Laden. API-Key/Bin prüfen.</div>';
+                console.error("Error loading board", e);
+                const container = document.getElementById('posts-container');
+                if (container) container.innerHTML = '<div style="color: #ef4444; padding: 20px;">Fehler beim Laden. API-Key/Bin prüfen.</div>';
             }
         }
 
@@ -1499,9 +1509,7 @@
         // Auto-Refresh every 60 seconds
         setInterval(() => {
             if (currentUser) {
-                loadBoard();
-                loadGroups('hausdienst', CONFIG.DISTRIBUTION_BIN);
-                loadGroups('visits', CONFIG.VISITS_BIN);
+                refreshContent();
             }
         }, 60000);
     </script>
