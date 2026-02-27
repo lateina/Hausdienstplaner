@@ -731,7 +731,8 @@
                     <div>${repliesHtml}</div>
                     <div class="post-actions">
                         <span class="action-link" onclick="openReplyModal(${post.id})">Antworten</span>
-                        <span class="action-link" style="color: #059669" onclick="sharePost(${post.id})">Teilen</span>
+                        <span class="action-link" style="color: #059669" onclick="sharePost(${post.id})">WhatsApp</span>
+                        <span class="action-link" style="color: #6366f1" onclick="shareByEmail(${post.id})">Email</span>
                         ${isAdmin ? `<span class="action-link" onclick="markAsSeen(${post.id})">${post.adminSeen ? '✓ Gelesen' : 'Als gelesen markieren'}</span>` : ''}
                         ${isAdmin || post.authorId === (currentUser.id || currentUser.mitarbeiter_id) ? `<span class="action-link" style="color: #ef4444" onclick="deletePost(${post.id})">Löschen</span>` : ''}
                     </div>
