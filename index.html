@@ -775,8 +775,9 @@
         function notifyNewPost(post) {
             if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
-            const notification = new Notification('Neuer Diensttausch-Eintrag', {
-                body: `${post.authorName}: ${post.title}`,
+            const group = post.tags && post.tags[0] ? ` (${post.tags[0]})` : '';
+            const notification = new Notification(post.authorName + group, {
+                body: post.title,
                 icon: 'icon_tight_192.png'
             });
 
