@@ -698,7 +698,13 @@
             const name = currentUser.name || currentUser.mitarbeiter_name;
             document.getElementById('user-display-name').textContent = name;
             document.getElementById('user-avatar').textContent = name[0];
-            document.getElementById('user-role').textContent = currentUser.role || 'Assistenzarzt';
+            const roleEl = document.getElementById('user-role');
+            if (name === 'Administrator') {
+                roleEl.style.display = 'none';
+            } else {
+                roleEl.style.display = 'block';
+                roleEl.textContent = currentUser.role || 'Assistenzarzt';
+            }
 
             await Promise.all([
                 loadBoard(),
