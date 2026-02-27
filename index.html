@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hausdienst-Chat | Med II</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- PWA & Mobile Optimization -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Hausdienst">
+    <meta name="theme-color" content="#6366f1">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/Antigravity-AI/media/main/hausdienst_icon.png">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            --radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Login Screen */
+        #login-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100%;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .login-card h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        .login-card p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+        }
+
+        select,
+        input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        select:focus,
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 1rem;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        /* Main Application */
+        #main-app {
+            display: none;
+            width: 100%;
+            max-width: 1200px;
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 2rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 4px;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+
+        .nav-tab {
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .nav-tab.active {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            color: var(--primary);
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        /* Board Styles */
+        .board-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .post-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #f1f5f9;
+        }
+
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .author {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .timestamp {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .post-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .post-body {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #334155;
+            margin-bottom: 1rem;
+        }
+
+        .post-tags {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .tag {
+            background: #f1f5f9;
+            color: #475569;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .post-actions {
+            border-top: 1px solid #f1f5f9;
+            padding-top: 0.75rem;
+            display: flex;
+            gap: 16px;
+        }
+
+        .action-link {
+            font-size: 0.8rem;
+            color: var(--primary);
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        /* Groups View */
+        .groups-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .group-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .group-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 0.5rem;
+        }
+
+        .emp-list {
+            list-style: none;
+        }
+
+        .emp-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 0.9rem;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 500px;
+            border-radius: var(--radius);
+            padding: 2rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            margin-bottom: 1rem;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn-ghost {
+            padding: 8px 16px;
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .month-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .month-tab {
+            padding: 6px 14px;
+            background: #f1f5f9;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #475569;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .month-tab.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+        }
+
+        @media (max-width: 640px) {
+            .groups-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Login Screen -->
+    <div id="login-screen">
+        <div class="login-card">
+            <h1>Hausdienst-Chat</h1>
+            <p>Anmeldung für Assistenzärzte</p>
+
+            <div class="form-group">
+                <label for="name-select">Name</label>
+                <select id="name-select">
+                    <option value="" disabled selected>Mitarbeiter wählen...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="pin-input">PIN</label>
+                <input type="password" id="pin-input" placeholder="••••">
+            </div>
+
+            <button class="btn-primary" onclick="handleLogin()">Anmelden</button>
+            <div id="login-status"
+                style="font-size: 0.8rem; margin-top: 1rem; color: var(--text-muted); display: none;">Lade
+                Mitarbeiter...</div>
+            <div id="login-error" style="color: #ef4444; font-size: 0.8rem; margin-top: 1rem; display: none;">PIN
+                ungültig.</div>
+
+            <div
+                style="margin-top: 2rem; border-top: 1px solid #e2e8f0; padding-top: 1rem; display: flex; flex-direction: column; gap: 8px;">
+                <span class="action-link" style="font-size: 0.75rem; color: var(--text-muted);"
+                    onclick="resetApiKey()">API-Key ändern</span>
+                <span class="action-link" style="font-size: 0.75rem; color: var(--text-muted);"
+                    onclick="resetEmployeeBin()">Mitarbeiter-Bin ändern</span>
+                <span class="action-link" style="font-size: 0.75rem; color: var(--text-muted);"
+                    onclick="resetDistributionBin()">Verteilungs-Bin ändern</span>
+                <span class="action-link" style="font-size: 0.75rem; color: var(--text-muted);"
+                    onclick="resetChatBin()">Chat-Bin ändern</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="main-app">
+        <header>
+            <div class="user-info">
+                <div class="avatar" id="user-avatar">?</div>
+                <div>
+                    <div style="font-weight: 700;" id="user-display-name">Gast</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);" id="user-role">Assistenzarzt</div>
+                </div>
+            </div>
+            <button class="btn-ghost" onclick="handleLogout()">Abmelden</button>
+        </header>
+
+        <div class="nav-tabs">
+            <div class="nav-tab active" onclick="showTab('board')">📋 Message Board</div>
+            <div class="nav-tab" onclick="showTab('groups')">👥 Dienstgruppen</div>
+        </div>
+
+        <!-- Board Section -->
+        <section id="board-section" class="content-section active">
+            <div class="board-header">
+                <h2>Tauschbörse</h2>
+                <button class="btn-primary" style="width: auto; padding: 8px 16px;" onclick="openModal('new-post')">+
+                    Neuer Eintrag</button>
+            </div>
+            <div id="posts-container">
+                <div style="text-align: center; color: var(--text-muted); padding: 40px;">Lade Einträge...</div>
+            </div>
+        </section>
+
+        <!-- Groups Section -->
+        <section id="groups-section" class="content-section">
+            <div class="board-header">
+                <h2>Aktuelle Dienstgruppen</h2>
+                <div style="font-size: 0.875rem; color: var(--text-muted);" id="distribution-status">Basierend auf
+                    aktueller Planung</div>
+            </div>
+            <div class="month-tabs" id="month-tabs-container">
+                <!-- Month tabs will be rendered here -->
+            </div>
+            <div class="groups-grid" id="groups-container">
+                <!-- Groups will be rendered here -->
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal New Post -->
+    <div id="modal-new-post" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 1.5rem;">Neuen Beitrag erstellen</h3>
+            <div class="form-group">
+                <label>Betreff</label>
+                <input type="text" id="post-title-input" placeholder="Z.B. Suche Tausch für 14.03.">
+            </div>
+            <div class="form-group">
+                <label>Dienstgruppe (Optional)</label>
+                <select id="post-group-tag">
+                    <option value="">Keine Auswahl</option>
+                    <option value="1./2. Hausdienst">1./2. Hausdienst</option>
+                    <option value="3. Hausdienst">3. Hausdienst</option>
+                    <option value="Echo-Hintergrund">Echo-Hintergrund</option>
+                    <option value="Broncho-Hintergrund">Broncho-Hintergrund</option>
+                    <option value="Kardio-Hintergrund">Kardio-Hintergrund</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Nachricht</label>
+                <textarea id="post-body-input" placeholder="Details hier eintragen..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" onclick="closeModal()">Abbrechen</button>
+                <button class="btn-primary" style="width: auto;" onclick="submitPost()">Veröffentlichen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reply Modal -->
+    <div id="modal-reply" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 1.5rem;" id="reply-modal-title">Antwort schreiben</h3>
+            <div class="form-group">
+                <label>Deine Nachricht</label>
+                <textarea id="reply-body-input" placeholder="Schreibe deine Antwort hier..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" onclick="closeModal()">Abbrechen</button>
+                <button class="btn-primary" style="width: auto;" onclick="submitReply()">Antworten</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIG
+        const CONFIG = {
+            EMPLOYEE_BIN: localStorage.getItem('hc-emp-bin') || '699ffb53ae596e708f4b3de5',
+            DISTRIBUTION_BIN: localStorage.getItem('hc-dist-bin') || '69a1562bae596e708f4ea8f1',
+            CHAT_BIN: localStorage.getItem('hc-chat-bin') || '69a1781cae596e708f4efed8',
+            API_KEY: localStorage.getItem('hc-api-key') || ''
+        };
+
+        let currentUser = null;
+        let employees = [];
+        let posts = [];
+        let distributions = {};
+        let monthsData = [];
+        let currentMonthId = null;
+
+        // INITIAL LOAD
+        async function init() {
+            // Check for Deep Link
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetPostId = urlParams.get('post');
+
+            if (!CONFIG.API_KEY) {
+                const key = prompt("Bitte JSONBin API-Key eingeben:");
+                if (key) {
+                    CONFIG.API_KEY = key;
+                    localStorage.setItem('hc-api-key', key);
+                } else {
+                    showStatus("API-Key erforderlich. Bitte Seite neu laden oder unten klicken.", true);
+                    return;
+                }
+            }
+            await loadEmployees();
+            const saved = localStorage.getItem('hc-user');
+            if (saved) {
+                try {
+                    currentUser = JSON.parse(saved);
+                    // Verify user still exists in employees list
+                    const exists = employees.find(e => (e.id || e.mitarbeiter_id) == (currentUser.id || currentUser.mitarbeiter_id));
+                    if (exists) {
+                        setupApp();
+                        if (targetPostId) {
+                            setTimeout(() => { scrollToPost(targetPostId); }, 1000);
+                        }
+                    }
+                    else { localStorage.removeItem('hc-user'); }
+                } catch (e) { localStorage.removeItem('hc-user'); }
+            }
+        }
+
+        function scrollToPost(id) {
+            const el = document.getElementById(`post-${id}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth' });
+                el.style.boxShadow = '0 0 0 3px var(--primary)';
+                setTimeout(() => { el.style.boxShadow = ''; }, 3000);
+            }
+        }
+
+        function showStatus(msg, isError = false) {
+            const status = document.getElementById('login-status');
+            status.textContent = msg;
+            status.style.display = 'block';
+            status.style.color = isError ? '#ef4444' : 'var(--text-muted)';
+        }
+
+        async function loadEmployees() {
+            showStatus("Lade Mitarbeiter...");
+            try {
+                const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.EMPLOYEE_BIN}/latest`, {
+                    headers: { 'X-Master-Key': CONFIG.API_KEY }
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.message || `HTTP ${res.status}`);
+                }
+
+                let record = data.record;
+                // Handle different JSON structures
+                if (Array.isArray(record)) {
+                    employees = record;
+                } else if (record && typeof record === 'object') {
+                    // Try common keys if record is an object
+                    employees = record.employees || record.mitarbeiter || record.users || Object.values(record).find(val => Array.isArray(val)) || [];
+                } else {
+                    employees = [];
+                }
+
+                renderNameSelect();
+                document.getElementById('login-status').style.display = 'none';
+            } catch (e) {
+                console.error("Error loading employees", e);
+                showStatus(`Fehler: ${e.message}`, true);
+            }
+        }
+
+        function renderNameSelect() {
+            const select = document.getElementById('name-select');
+            select.innerHTML = '<option value="" disabled selected>Mitarbeiter wählen...</option>';
+            employees.forEach(emp => {
+                const opt = document.createElement('option');
+                opt.value = emp.id || emp.mitarbeiter_id;
+                opt.textContent = emp.name || emp.mitarbeiter_name;
+                select.appendChild(opt);
+            });
+        }
+
+        function resetApiKey() {
+            const key = prompt("Neuen JSONBin API-Key eingeben:", CONFIG.API_KEY);
+            if (key) {
+                CONFIG.API_KEY = key;
+                localStorage.setItem('hc-api-key', key);
+                loadEmployees();
+            }
+        }
+
+        function resetEmployeeBin() {
+            const bin = prompt("Neue Mitarbeiter-Bin ID eingeben:", CONFIG.EMPLOYEE_BIN);
+            if (bin) {
+                CONFIG.EMPLOYEE_BIN = bin;
+                localStorage.setItem('hc-emp-bin', bin);
+                loadEmployees();
+            }
+        }
+
+        function handleLogin() {
+            const id = document.getElementById('name-select').value;
+            const pin = document.getElementById('pin-input').value;
+            const error = document.getElementById('login-error');
+            const user = employees.find(e => (e.id || e.mitarbeiter_id) == id);
+            if (user && user.pin == pin) {
+                currentUser = user;
+                localStorage.setItem('hc-user', JSON.stringify(currentUser));
+                setupApp();
+            } else { error.style.display = 'block'; }
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            localStorage.removeItem('hc-user');
+            document.getElementById('main-app').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+        }
+
+        function setupApp() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            const name = currentUser.name || currentUser.mitarbeiter_name;
+            document.getElementById('user-display-name').textContent = name;
+            document.getElementById('user-avatar').textContent = name[0];
+            document.getElementById('user-role').textContent = currentUser.role || 'Assistenzarzt';
+            loadBoard();
+            loadGroups();
+
+            // Handle deep link after login
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetPostId = urlParams.get('post');
+            if (targetPostId) {
+                setTimeout(() => { scrollToPost(targetPostId); }, 1000);
+            }
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(`${tab}-section`).classList.add('active');
+        }
+
+        // BOARD
+        async function loadBoard() {
+            const container = document.getElementById('posts-container');
+            try {
+                const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.CHAT_BIN}/latest`, {
+                    headers: { 'X-Master-Key': CONFIG.API_KEY }
+                });
+                const data = await res.json();
+                posts = data.record.posts || [];
+                renderPosts();
+            } catch (e) {
+                container.innerHTML = '<div style="color: #ef4444; padding: 20px;">Fehler beim Laden. API-Key/Bin prüfen.</div>';
+            }
+        }
+
+        function renderPosts() {
+            const container = document.getElementById('posts-container');
+            container.innerHTML = '';
+            if (posts.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Bisher keine Einträge.</div>';
+                return;
+            }
+            const isAdmin = currentUser.role === 'Administrator';
+            [...posts].reverse().forEach(post => {
+                const card = document.createElement('div');
+                card.className = 'post-card';
+                card.id = `post-${post.id}`;
+                if (isAdmin && !post.adminSeen) {
+                    card.style.borderLeft = '4px solid var(--primary)';
+                    card.style.background = '#f5f7ff';
+                }
+                const repliesHtml = (post.replies || []).map(reply => `
+                    <div style="margin-top: 0.8rem; padding-left: 1rem; border-left: 2px solid #e2e8f0; font-size: 0.85rem;">
+                        <span style="font-weight: 600;">${reply.authorName}:</span> ${reply.body}
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">${new Date(reply.createdAt).toLocaleString('de-DE')}</div>
+                    </div>
+                `).join('');
+                card.innerHTML = `
+                    <div class="post-header">
+                        <span class="author">${post.authorName}</span>
+                        <span class="timestamp">${new Date(post.createdAt).toLocaleString('de-DE')}</span>
+                    </div>
+                    <div class="post-title">${post.title}</div>
+                    ${post.tags?.length ? `<div class="post-tags">${post.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : ''}
+                    <div class="post-body">${post.body.replace(/\n/g, '<br>')}</div>
+                    <div>${repliesHtml}</div>
+                    <div class="post-actions">
+                        <span class="action-link" onclick="openReplyModal(${post.id})">Antworten</span>
+                        <span class="action-link" style="color: #059669" onclick="sharePost(${post.id})">Teilen</span>
+                        ${isAdmin ? `<span class="action-link" onclick="markAsSeen(${post.id})">${post.adminSeen ? '✓ Gelesen' : 'Als gelesen markieren'}</span>` : ''}
+                        ${isAdmin ? `<span class="action-link" style="color: #ef4444" onclick="deletePost(${post.id})">Löschen</span>` : ''}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        async function sharePost(postId) {
+            const post = posts.find(p => p.id === postId);
+            if (!post) return;
+
+            const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
+            const shareText = `Hausdienst-Tauschwunsch von ${post.authorName}: "${post.title}". Details und Antwort hier im Tool:`;
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'Hausdienst-Tausch',
+                        text: shareText,
+                        url: shareUrl
+                    });
+                } catch (err) { console.log('Share failed', err); }
+            } else {
+                // Fallback for desktop: Copy to clipboard
+                const dummy = document.createElement("input");
+                document.body.appendChild(dummy);
+                dummy.value = `${shareText} ${shareUrl}`;
+                dummy.select();
+                document.execCommand("copy");
+                document.body.removeChild(dummy);
+                alert("Teilen-Link wurde in die Zwischenablage kopiert!");
+            }
+        }
+
+        // GROUPS
+        async function loadGroups() {
+            const container = document.getElementById('groups-container');
+            container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Lade Dienstgruppen...</div>';
+            try {
+                const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.DISTRIBUTION_BIN}/latest`, {
+                    headers: { 'X-Master-Key': CONFIG.API_KEY }
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.message || `HTTP ${res.status}`);
+                }
+
+                const record = data.record;
+                monthsData = record.months || [];
+
+                if (monthsData.length > 0) {
+                    // Find current month or take first
+                    const now = new Date();
+                    const monthId = `month_${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}`;
+                    const initialMonth = monthsData.find(m => m.monat_id === monthId) || monthsData[0];
+                    renderMonthTabs(initialMonth.monat_id);
+                    selectMonth(initialMonth.monat_id);
+                } else {
+                    distributions = record.assignments || record || {};
+                    renderGroups();
+                }
+            } catch (e) {
+                console.error("Error loading groups", e);
+                container.innerHTML = `<div style="color: #ef4444; padding: 20px;">Fehler beim Laden der Gruppen: ${e.message}</div>`;
+            }
+        }
+
+        function renderMonthTabs(activeId) {
+            const container = document.getElementById('month-tabs-container');
+            container.innerHTML = '';
+            monthsData.forEach(month => {
+                const tab = document.createElement('div');
+                tab.className = `month-tab ${month.monat_id === activeId ? 'active' : ''}`;
+                tab.textContent = month.name || month.monat_id;
+                tab.onclick = () => {
+                    renderMonthTabs(month.monat_id);
+                    selectMonth(month.monat_id);
+                };
+                container.appendChild(tab);
+            });
+        }
+
+        function selectMonth(monthId) {
+            const month = monthsData.find(m => m.monat_id === monthId);
+            if (month) {
+                distributions = month.assignments || {};
+                document.getElementById('distribution-status').textContent = `Planung für ${month.name || month.monat_id}`;
+                renderGroups();
+            }
+        }
+
+        function renderGroups() {
+            const container = document.getElementById('groups-container');
+            container.innerHTML = '';
+            const labels = {
+                'visite_46': 'Station 46',
+                'visite_18': 'Station 18',
+                'visite_19': 'Station 19',
+                '1. Hausdienst': '1. Hausdienst',
+                '2. Hausdienst': '2. Hausdienst',
+                '3. Hausdienst': '3. Hausdienst',
+                'Echo-Hintergrund': 'Echo-Hintergrund',
+                'Broncho-Hintergrund': 'Broncho-Hintergrund',
+                'Kardio-Hintergrund': 'Kardio-Hintergrund',
+                'pool': 'Pool / Springer',
+                'excluded': 'Abwesend / Elternzeit'
+            };
+            Object.entries(distributions).forEach(([key, list]) => {
+                const groupName = labels[key] || key;
+                const card = document.createElement('div');
+                card.className = 'group-card';
+
+                // Ensure list is an array for mapping
+                const employeesList = Array.isArray(list) ? list : (list ? [list] : []);
+
+                card.innerHTML = `
+                    <div class="group-name">${groupName}</div>
+                    <ul class="emp-list">
+                        ${employeesList.map(emp => `
+                            <li class="emp-item">
+                                <span>${typeof emp === 'object' ? (emp.name || emp.mitarbeiter_name || JSON.stringify(emp)) : emp}</span>
+                                <span style="font-size: 0.7rem; color: var(--text-muted)">${emp.isLeader ? '★ Leitung' : ''}</span>
+                            </li>
+                        `).join('') || '<li style="color: #ccc; font-style: italic;">Keine Zuordnung</li>'}
+                    </ul>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // MODALS
+        let currentReplyPostId = null;
+        function openModal(id) { document.getElementById(`modal-${id}`).style.display = 'flex'; }
+        function openReplyModal(postId) {
+            currentReplyPostId = postId;
+            const post = posts.find(p => p.id === postId);
+            document.getElementById('reply-modal-title').textContent = `Antwort an ${post.authorName}`;
+            openModal('reply');
+        }
+        function closeModal() {
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+            currentReplyPostId = null;
+        }
+
+        async function submitPost() {
+            const title = document.getElementById('post-title-input').value;
+            const group = document.getElementById('post-group-tag').value;
+            const body = document.getElementById('post-body-input').value;
+            if (!title || !body) { alert("Bitte ausfüllen."); return; }
+            const newPost = {
+                id: Date.now(),
+                authorId: currentUser.id || currentUser.mitarbeiter_id,
+                authorName: currentUser.name || currentUser.mitarbeiter_name,
+                title, body, tags: group ? [group] : [],
+                createdAt: new Date().toISOString(),
+                replies: [], adminSeen: false
+            };
+            posts.push(newPost);
+            await savePosts();
+            closeModal();
+            renderPosts();
+        }
+
+        async function submitReply() {
+            const body = document.getElementById('reply-body-input').value;
+            if (!body) return;
+            const post = posts.find(p => p.id === currentReplyPostId);
+            if (!post) return;
+            post.replies = post.replies || [];
+            post.replies.push({
+                authorName: currentUser.name || currentUser.mitarbeiter_name,
+                body, createdAt: new Date().toISOString()
+            });
+            await savePosts();
+            document.getElementById('reply-body-input').value = '';
+            closeModal();
+            renderPosts();
+        }
+
+        async function markAsSeen(postId) {
+            const post = posts.find(p => p.id === postId);
+            if (post) { post.adminSeen = true; await savePosts(); renderPosts(); }
+        }
+
+        async function deletePost(postId) {
+            if (!confirm("Löschen?")) return;
+            posts = posts.filter(p => p.id !== postId);
+            await savePosts();
+            renderPosts();
+        }
+
+        function resetDistributionBin() {
+            const bin = prompt("Neue Verteilungs-Bin ID eingeben:", CONFIG.DISTRIBUTION_BIN);
+            if (bin) {
+                CONFIG.DISTRIBUTION_BIN = bin;
+                localStorage.setItem('hc-dist-bin', bin);
+                loadGroups();
+            }
+        }
+
+        function resetChatBin() {
+            const bin = prompt("Neue Chat-Bin ID eingeben:", CONFIG.CHAT_BIN);
+            if (bin) {
+                CONFIG.CHAT_BIN = bin;
+                localStorage.setItem('hc-chat-bin', bin);
+                if (currentUser) loadBoard();
+            }
+        }
+
+        async function savePosts() {
+            try {
+                await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.CHAT_BIN}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': CONFIG.API_KEY },
+                    body: JSON.stringify({ posts })
+                });
+            } catch (e) { alert("Speichern fehlgeschlagen."); }
+        }
+
+        init();
+
+        // Auto-Refresh every 60 seconds
+        setInterval(() => {
+            if (currentUser) {
+                loadBoard();
+                loadGroups();
+            }
+        }, 60000);
+    </script>
+</body>
+
+</html>
