@@ -1029,7 +1029,9 @@
             const group = document.getElementById('post-group-tag').value;
             const date = document.getElementById('post-date-input').value;
             const body = document.getElementById('post-body-input').value;
-            if (!title || !body) { alert("Bitte ausfüllen."); return; }
+            if (!title && !body) { alert("Bitte Betreff und Nachricht ausfüllen."); return; }
+            if (!title) { alert("Bitte einen Betreff eingeben."); return; }
+            if (!body) { alert("Bitte eine Nachricht eingeben."); return; }
             const newPost = {
                 id: Date.now(),
                 authorId: currentUser.id || currentUser.mitarbeiter_id,
@@ -1053,7 +1055,7 @@
 
         async function submitReply() {
             const body = document.getElementById('reply-body-input').value;
-            if (!body) return;
+            if (!body) { alert("Bitte eine Antwort eingeben."); return; }
             const post = posts.find(p => p.id === currentReplyPostId);
             if (!post) return;
             post.replies = post.replies || [];
