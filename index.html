@@ -555,7 +555,8 @@
             <div class="board-header">
                 <div style="display: flex; flex-direction: column; gap: 8px;">
                     <h2>Tauschbörse</h2>
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0;">
+                    <label id="relevant-filter-container"
+                        style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0;">
                         <span class="toggle-switch">
                             <input type="checkbox" id="filter-relevant-checkbox" checked onchange="renderPosts()">
                             <span class="slider"></span>
@@ -852,6 +853,12 @@
 
             populateGroupSelect();
             requestNotificationPermission();
+
+            // Hide relevant filter for Admin
+            const filterContainer = document.getElementById('relevant-filter-container');
+            if (filterContainer) {
+                filterContainer.style.display = isCurrentUserAdmin() ? 'none' : 'flex';
+            }
         }
 
         function requestNotificationPermission() {
