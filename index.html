@@ -15,6 +15,7 @@
     <meta name="apple-mobile-web-app-title" content="Hausdienst">
     <meta name="theme-color" content="#6366f1">
     <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/Antigravity-AI/media/main/hausdienst_icon.png">
+    <link rel="manifest" href="manifest.json">
     <style>
         :root {
             --primary: #6366f1;
@@ -961,6 +962,13 @@
         }
 
         init();
+
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed', err));
+            });
+        }
 
         // Auto-Refresh every 60 seconds
         setInterval(() => {
