@@ -521,7 +521,6 @@
                     <option value="3. Hausdienst">3. Hausdienst</option>
                     <option value="Echo-Hintergrund">Echo-Hintergrund</option>
                     <option value="Broncho-Hintergrund">Broncho-Hintergrund</option>
-                    <option value="Kardio-Hintergrund">Kardio-Hintergrund</option>
                 </select>
             </div>
             <div class="form-group">
@@ -1032,6 +1031,7 @@
             };
 
             Object.entries(groupsState[type].distributions).forEach(([key, list]) => {
+                if (key === 'Kardio-Hintergrund') return;
                 const groupName = labels[key] || key;
                 const card = document.createElement('div');
                 card.className = 'group-card';
@@ -1066,7 +1066,7 @@
                 group.label = categoryLabel;
                 Object.keys(distributions).forEach(key => {
                     // Skip technical groups and non-service groups
-                    if (['pool', 'excluded'].includes(key) || key.startsWith('Wegen Schichtdienst')) return;
+                    if (['pool', 'excluded', 'Kardio-Hintergrund'].includes(key) || key.startsWith('Wegen Schichtdienst')) return;
                     const opt = document.createElement('option');
                     opt.value = labels[key] || key;
                     opt.textContent = labels[key] || key;
