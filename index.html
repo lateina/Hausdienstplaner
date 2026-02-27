@@ -487,7 +487,7 @@
                 <input type="text" id="post-title-input" placeholder="z. B. Dienst übernehmen">
             </div>
             <div class="form-group">
-                <label>Tausch-Datum</label>
+                <label>Dienst-Datum</label>
                 <input type="date" id="post-date-input">
             </div>
             <div class="form-group">
@@ -734,7 +734,7 @@
                         <div style="font-size: 0.7rem; color: var(--text-muted);">${new Date(reply.createdAt).toLocaleString('de-DE')}</div>
                     </div>
                 `).join('');
-                const dateStr = post.targetDate ? `<div style="margin-bottom: 0.5rem; color: var(--primary); font-weight: 600;">📅 Tausch für: ${new Date(post.targetDate).toLocaleDateString('de-DE')}</div>` : '';
+                const dateStr = post.targetDate ? `<div style="margin-bottom: 0.5rem; color: var(--primary); font-weight: 600;">📅 Dienst am: ${new Date(post.targetDate).toLocaleDateString('de-DE')}</div>` : '';
                 card.innerHTML = `
                     ${post.tags?.length ? `<div class="post-tags" style="margin-bottom: 0.5rem;">${post.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : ''}
                     <div class="post-title" style="margin-bottom: 0.25rem;">${post.title}</div>
