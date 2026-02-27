@@ -505,12 +505,12 @@
                 <div class="form-group">
                     <label>Dienst-Datum</label>
                     <input type="date" id="post-date-input"
-                        style="width: 100%; box-sizing: border-box; -webkit-appearance: none; min-height: 44px;">
+                        style="width: 100%; box-sizing: border-box; appearance: none; -webkit-appearance: none; min-height: 44px;">
                 </div>
                 <div class="form-group">
                     <label>Bis-Datum (Optional)</label>
                     <input type="date" id="post-end-date-input"
-                        style="width: 100%; box-sizing: border-box; -webkit-appearance: none; min-height: 44px;">
+                        style="width: 100%; box-sizing: border-box; appearance: none; -webkit-appearance: none; min-height: 44px;">
                 </div>
             </div>
             <div class="form-group">
@@ -754,7 +754,10 @@
                 if (lastSeenPostId && newPosts.length > 0) {
                     const latestPost = newPosts[newPosts.length - 1];
                     if (latestPost.id > lastSeenPostId && latestPost.authorId !== (currentUser.id || currentUser.mitarbeiter_id)) {
-                        notifyNewPost(latestPost);
+                        const postGroup = latestPost.tags && latestPost.tags[0];
+                        if (currentUser.role === 'Administrator' || isUserInDienstGroup(postGroup, latestPost.targetDate)) {
+                            notifyNewPost(latestPost);
+                        }
                     }
                 }
 
@@ -843,6 +846,42 @@
             if (groupName.includes("Kardio")) return "Kardiohintergrund";
             if (groupName.includes("Broncho")) return "Bronchohintergrund";
             return "Dienst";
+        }
+
+        function isUserInDienstGroup(groupLabel, targetDate) {
+            if (!currentUser) return false;
+            if (currentUser.role === 'Administrator') return true;
+            if (!groupLabel) return false;
+
+            for (const type of ['hausdienst', 'visits']) {
+                const state = groupsState[type];
+                let distributions = state.distributions;
+
+                if (targetDate) {
+                    const dateObj = new Date(targetDate);
+                    const monatId = `month_${dateObj.getFullYear()}_${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+                    const month = state.months.find(m => m.monat_id === monatId) ||
+                        state.months.find(m => m.monat_id.startsWith(`month_${dateObj.getFullYear()}`));
+                    if (month && month.assignments) distributions = month.assignments;
+                }
+
+                const reverseLabels = {
+                    'Station 46': 'visite_46', 'Station 18': 'visite_18', 'Station 19': 'visite_19'
+                };
+                const searchKey = reverseLabels[groupLabel] || groupLabel;
+                const assigned = distributions[searchKey];
+
+                if (assigned) {
+                    const names = Array.isArray(assigned) ? assigned : [assigned];
+                    const currentName = (currentUser.name || currentUser.mitarbeiter_name || "").toLowerCase().replace(/,/g, '').trim();
+                    const isMember = names.some(n => {
+                        const nameString = (typeof n === 'object' ? (n.name || n.mitarbeiter_name) : n).trim().toLowerCase().replace(/,/g, '');
+                        return nameString === currentName || nameString.includes(currentName) || currentName.includes(nameString);
+                    });
+                    if (isMember) return true;
+                }
+            }
+            return false;
         }
 
         async function sharePost(postId) {
