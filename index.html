@@ -570,6 +570,9 @@
             visits: { months: [], currentMonth: null, distributions: {} }
         };
 
+        // Notification State
+        let lastSeenPostId = null;
+
         // INITIAL LOAD
         async function init() {
             // Check for Deep Link
@@ -719,6 +722,13 @@
             ]);
 
             populateGroupSelect();
+            requestNotificationPermission();
+        }
+
+        function requestNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
         }
 
         function showTab(tab) {
@@ -736,11 +746,39 @@
                     headers: { 'X-Master-Key': CONFIG.API_KEY }
                 });
                 const data = await res.json();
-                posts = data.record.posts || [];
+                const newPosts = data.record.posts || [];
+
+                // Check for new posts to notify
+                if (lastSeenPostId && newPosts.length > 0) {
+                    const latestPost = newPosts[newPosts.length - 1];
+                    if (latestPost.id > lastSeenPostId && latestPost.authorId !== (currentUser.id || currentUser.mitarbeiter_id)) {
+                        notifyNewPost(latestPost);
+                    }
+                }
+
+                if (newPosts.length > 0) {
+                    lastSeenPostId = newPosts[newPosts.length - 1].id;
+                }
+
+                posts = newPosts;
                 renderPosts();
             } catch (e) {
                 container.innerHTML = '<div style="color: #ef4444; padding: 20px;">Fehler beim Laden. API-Key/Bin prüfen.</div>';
             }
+        }
+
+        function notifyNewPost(post) {
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+            const notification = new Notification('Neuer Diensttausch-Eintrag', {
+                body: `${post.authorName}: ${post.title}`,
+                icon: 'icon_tight_192.png'
+            });
+
+            notification.onclick = () => {
+                window.focus();
+                scrollToPost(post.id);
+            };
         }
 
         function renderPosts() {
