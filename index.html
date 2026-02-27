@@ -447,7 +447,8 @@
 
         <div class="nav-tabs">
             <div class="nav-tab active" onclick="showTab('board')">📋 Message Board</div>
-            <div class="nav-tab" onclick="showTab('groups')">👥 Dienstgruppen</div>
+            <div class="nav-tab" onclick="showTab('hausdienst')">🏠 Hausdienst</div>
+            <div class="nav-tab" onclick="showTab('visits')">🩺 Visiten</div>
         </div>
 
         <!-- Board Section -->
@@ -462,17 +463,32 @@
             </div>
         </section>
 
-        <!-- Groups Section -->
-        <section id="groups-section" class="content-section">
+        <!-- Hausdienst Section (formerly Groups) -->
+        <section id="hausdienst-section" class="content-section">
             <div class="board-header">
-                <h2>Aktuelle Dienstgruppen</h2>
-                <div style="font-size: 0.875rem; color: var(--text-muted);" id="distribution-status">Basierend auf
+                <h2>Hausdienstgruppen</h2>
+                <div style="font-size: 0.875rem; color: var(--text-muted);" id="hausdienst-status">Basierend auf
                     aktueller Planung</div>
             </div>
-            <div class="month-tabs" id="month-tabs-container">
+            <div class="month-tabs" id="hausdienst-tabs">
                 <!-- Month tabs will be rendered here -->
             </div>
-            <div class="groups-grid" id="groups-container">
+            <div class="groups-grid" id="hausdienst-container">
+                <!-- Groups will be rendered here -->
+            </div>
+        </section>
+
+        <!-- Visits Section -->
+        <section id="visits-section" class="content-section">
+            <div class="board-header">
+                <h2>Visitengruppen</h2>
+                <div style="font-size: 0.875rem; color: var(--text-muted);" id="visits-status">Basierend auf
+                    aktueller Planung</div>
+            </div>
+            <div class="month-tabs" id="visits-tabs">
+                <!-- Month tabs will be rendered here -->
+            </div>
+            <div class="groups-grid" id="visits-container">
                 <!-- Groups will be rendered here -->
             </div>
         </section>
@@ -533,6 +549,7 @@
         const CONFIG = {
             EMPLOYEE_BIN: localStorage.getItem('hc-emp-bin') || '699ffb53ae596e708f4b3de5',
             DISTRIBUTION_BIN: localStorage.getItem('hc-dist-bin') || '69a1562bae596e708f4ea8f1',
+            VISITS_BIN: '69a157de43b1c97be9a2dda9',
             CHAT_BIN: localStorage.getItem('hc-chat-bin') || '69a1781cae596e708f4efed8',
             API_KEY: localStorage.getItem('hc-api-key') || ''
         };
@@ -540,9 +557,12 @@
         let currentUser = null;
         let employees = [];
         let posts = [];
-        let distributions = {};
-        let monthsData = [];
-        let currentMonthId = null;
+
+        // Group State
+        const groupsState = {
+            hausdienst: { months: [], currentMonth: null, distributions: {} },
+            visits: { months: [], currentMonth: null, distributions: {} }
+        };
 
         // INITIAL LOAD
         async function init() {
@@ -672,22 +692,21 @@
             document.getElementById('login-screen').style.display = 'flex';
         }
 
-        function setupApp() {
+        async function setupApp() {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
             const name = currentUser.name || currentUser.mitarbeiter_name;
             document.getElementById('user-display-name').textContent = name;
             document.getElementById('user-avatar').textContent = name[0];
             document.getElementById('user-role').textContent = currentUser.role || 'Assistenzarzt';
-            loadBoard();
-            loadGroups();
 
-            // Handle deep link after login
-            const urlParams = new URLSearchParams(window.location.search);
-            const targetPostId = urlParams.get('post');
-            if (targetPostId) {
-                setTimeout(() => { scrollToPost(targetPostId); }, 1000);
-            }
+            await Promise.all([
+                loadBoard(),
+                loadGroups('hausdienst', CONFIG.DISTRIBUTION_BIN),
+                loadGroups('visits', CONFIG.VISITS_BIN)
+            ]);
+
+            populateGroupSelect();
         }
 
         function showTab(tab) {
@@ -795,49 +814,43 @@
             const groupName = post.tags && post.tags[0];
 
             if (groupName) {
-                let targetAssignments = null;
+                // Check both sources for recipients
+                for (const type of ['hausdienst', 'visits']) {
+                    let targetAssignments = null;
+                    const state = groupsState[type];
 
-                if (post.targetDate) {
-                    const targetDate = new Date(post.targetDate);
-                    const monatId = `month_${targetDate.getFullYear()}_${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
-
-                    const month = monthsData.find(m => m.monat_id === monatId) ||
-                        monthsData.find(m => m.monat_id.startsWith(`month_${targetDate.getFullYear()}`));
-
-                    if (month && month.assignments) {
-                        targetAssignments = month.assignments;
+                    if (post.targetDate) {
+                        const targetDate = new Date(post.targetDate);
+                        const monatId = `month_${targetDate.getFullYear()}_${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
+                        const month = state.months.find(m => m.monat_id === monatId) ||
+                            state.months.find(m => m.monat_id.startsWith(`month_${targetDate.getFullYear()}`));
+                        if (month && month.assignments) targetAssignments = month.assignments;
                     }
-                }
 
-                // Fallback to current global distributions
-                const assignments = targetAssignments || distributions || {};
+                    const assignments = targetAssignments || state.distributions || {};
+                    const reverseLabels = {
+                        'Station 46': 'visite_46', 'Station 18': 'visite_18', 'Station 19': 'visite_19'
+                    };
+                    const searchKey = reverseLabels[groupName] || groupName;
+                    const assigned = assignments[searchKey];
 
-                // Reverse label lookup for keys like 'visite_46'
-                const reverseLabels = {
-                    'Station 46': 'visite_46',
-                    'Station 18': 'visite_18',
-                    'Station 19': 'visite_19'
-                };
-                const searchKey = reverseLabels[groupName] || groupName;
-                const assigned = assignments[searchKey];
+                    if (assigned) {
+                        const names = Array.isArray(assigned) ? assigned : [assigned];
+                        names.forEach(n => {
+                            const nameString = (typeof n === 'object' ? (n.name || n.mitarbeiter_name) : n).trim();
+                            if (!nameString) return;
 
-                if (assigned) {
-                    const names = Array.isArray(assigned) ? assigned : [assigned];
-                    names.forEach(n => {
-                        const nameString = (typeof n === 'object' ? (n.name || n.mitarbeiter_name) : n).trim();
-                        if (!nameString) return;
+                            const searchName = nameString.toLowerCase().replace(/,/g, '');
+                            const emp = employees.find(e => {
+                                const ename = (e.name || e.mitarbeiter_name || "").toLowerCase().replace(/,/g, '');
+                                return ename === searchName || ename.includes(searchName) || searchName.includes(ename);
+                            });
 
-                        // Robust name normalization & lookup
-                        const searchName = nameString.toLowerCase().replace(/,/g, '');
-                        const emp = employees.find(e => {
-                            const ename = (e.name || e.mitarbeiter_name || "").toLowerCase().replace(/,/g, '');
-                            return ename === searchName || ename.includes(searchName) || searchName.includes(ename);
+                            if (emp && (emp.email || emp.mitarbeiter_email)) {
+                                recipients.push(emp.email || emp.mitarbeiter_email);
+                            }
                         });
-
-                        if (emp && (emp.email || emp.mitarbeiter_email)) {
-                            recipients.push(emp.email || emp.mitarbeiter_email);
-                        }
-                    });
+                    }
                 }
             }
 
@@ -863,99 +876,126 @@
         }
 
         // GROUPS
-        async function loadGroups() {
-            const container = document.getElementById('groups-container');
-            container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Lade Dienstgruppen...</div>';
+        // GROUPS LOGIC
+        async function loadGroups(type, binId) {
+            const container = document.getElementById(`${type}-container`);
+            if (container) container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Lade Daten...</div>';
             try {
-                const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.DISTRIBUTION_BIN}/latest`, {
+                const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
                     headers: { 'X-Master-Key': CONFIG.API_KEY }
                 });
                 const data = await res.json();
-                if (!res.ok) {
-                    throw new Error(data.message || `HTTP ${res.status}`);
-                }
+                if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
 
                 const record = data.record;
-                monthsData = record.months || [];
+                groupsState[type].months = record.months || [];
 
-                if (monthsData.length > 0) {
-                    // Find current month or take first
+                if (groupsState[type].months.length > 0) {
                     const now = new Date();
                     const monthId = `month_${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}`;
-                    const initialMonth = monthsData.find(m => m.monat_id === monthId) || monthsData[0];
-                    renderMonthTabs(initialMonth.monat_id);
-                    selectMonth(initialMonth.monat_id);
+                    const initialMonth = groupsState[type].months.find(m => m.monat_id === monthId) || groupsState[type].months[0];
+                    renderGroupTabs(type, initialMonth.monat_id);
+                    selectCategoryMonth(type, initialMonth.monat_id);
                 } else {
-                    distributions = record.assignments || record || {};
-                    renderGroups();
+                    groupsState[type].distributions = record.assignments || record || {};
+                    renderCategoryGroups(type);
                 }
             } catch (e) {
-                console.error("Error loading groups", e);
-                container.innerHTML = `<div style="color: #ef4444; padding: 20px;">Fehler beim Laden der Gruppen: ${e.message}</div>`;
+                console.error(`Error loading ${type} groups`, e);
+                if (container) container.innerHTML = `<div style="color: #ef4444; padding: 20px;">Fehler: ${e.message}</div>`;
             }
         }
 
-        function renderMonthTabs(activeId) {
-            const container = document.getElementById('month-tabs-container');
+        function renderGroupTabs(type, activeId) {
+            const container = document.getElementById(`${type}-tabs`);
+            if (!container) return;
             container.innerHTML = '';
-            monthsData.forEach(month => {
+            groupsState[type].months.forEach(month => {
                 const tab = document.createElement('div');
                 tab.className = `month-tab ${month.monat_id === activeId ? 'active' : ''}`;
                 tab.textContent = month.name || month.monat_id;
                 tab.onclick = () => {
-                    renderMonthTabs(month.monat_id);
-                    selectMonth(month.monat_id);
+                    renderGroupTabs(type, month.monat_id);
+                    selectCategoryMonth(type, month.monat_id);
                 };
                 container.appendChild(tab);
             });
         }
 
-        function selectMonth(monthId) {
-            const month = monthsData.find(m => m.monat_id === monthId);
+        function selectCategoryMonth(type, monthId) {
+            const month = groupsState[type].months.find(m => m.monat_id === monthId);
             if (month) {
-                distributions = month.assignments || {};
-                document.getElementById('distribution-status').textContent = `Planung für ${month.name || month.monat_id}`;
-                renderGroups();
+                groupsState[type].distributions = month.assignments || {};
+                const statusEl = document.getElementById(`${type}-status`);
+                if (statusEl) statusEl.textContent = `Planung für ${month.name || month.monat_id}`;
+                renderCategoryGroups(type);
+
+                // Keep tags in sync for Message Board
+                populateGroupSelect();
             }
         }
 
-        function renderGroups() {
-            const container = document.getElementById('groups-container');
+        function renderCategoryGroups(type) {
+            const container = document.getElementById(`${type}-container`);
+            if (!container) return;
             container.innerHTML = '';
+
             const labels = {
-                'visite_46': 'Station 46',
-                'visite_18': 'Station 18',
-                'visite_19': 'Station 19',
-                '1. Hausdienst': '1. Hausdienst',
-                '2. Hausdienst': '2. Hausdienst',
-                '3. Hausdienst': '3. Hausdienst',
-                'Echo-Hintergrund': 'Echo-Hintergrund',
-                'Broncho-Hintergrund': 'Broncho-Hintergrund',
-                'Kardio-Hintergrund': 'Kardio-Hintergrund',
-                'pool': 'Pool / Springer',
-                'excluded': 'Abwesend / Elternzeit'
+                'visite_46': 'Station 46', 'visite_18': 'Station 18', 'visite_19': 'Station 19',
+                '1. Hausdienst': '1. Hausdienst', '2. Hausdienst': '2. Hausdienst', '3. Hausdienst': '3. Hausdienst',
+                'Echo-Hintergrund': 'Echo-Hintergrund', 'Broncho-Hintergrund': 'Broncho-Hintergrund', 'Kardio-Hintergrund': 'Kardio-Hintergrund',
+                'pool': 'Pool / Springer', 'excluded': 'Abwesend / Elternzeit'
             };
-            Object.entries(distributions).forEach(([key, list]) => {
+
+            Object.entries(groupsState[type].distributions).forEach(([key, list]) => {
                 const groupName = labels[key] || key;
                 const card = document.createElement('div');
                 card.className = 'group-card';
-
-                // Ensure list is an array for mapping
                 const employeesList = Array.isArray(list) ? list : (list ? [list] : []);
 
                 card.innerHTML = `
                     <div class="group-name">${groupName}</div>
                     <ul class="emp-list">
                         ${employeesList.map(emp => `
-                            <li class="emp-item">
-                                <span>${typeof emp === 'object' ? (emp.name || emp.mitarbeiter_name || JSON.stringify(emp)) : emp}</span>
-                                <span style="font-size: 0.7rem; color: var(--text-muted)">${emp.isLeader ? '★ Leitung' : ''}</span>
-                            </li>
+                            <li class="emp-item">${(typeof emp === 'object' ? (emp.name || emp.mitarbeiter_name) : emp)}</li>
                         `).join('') || '<li style="color: #ccc; font-style: italic;">Keine Zuordnung</li>'}
                     </ul>
                 `;
                 container.appendChild(card);
             });
+        }
+
+        function populateGroupSelect() {
+            const select = document.getElementById('post-group-tag');
+            if (!select) return;
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">Keine Auswahl</option>';
+
+            const labels = {
+                'visite_46': 'Station 46', 'visite_18': 'Station 18', 'visite_19': 'Station 19',
+                '1. Hausdienst': '1. Hausdienst', '2. Hausdienst': '2. Hausdienst', '3. Hausdienst': '3. Hausdienst',
+                'Echo-Hintergrund': 'Echo-Hintergrund', 'Broncho-Hintergrund': 'Broncho-Hintergrund', 'Kardio-Hintergrund': 'Kardio-Hintergrund'
+            };
+
+            const addGroup = (categoryLabel, distributions) => {
+                const group = document.createElement('optgroup');
+                group.label = categoryLabel;
+                Object.keys(distributions).forEach(key => {
+                    // Skip technical groups
+                    if (['pool', 'excluded'].includes(key)) return;
+                    const opt = document.createElement('option');
+                    opt.value = labels[key] || key;
+                    opt.textContent = labels[key] || key;
+                    group.appendChild(opt);
+                });
+                if (group.children.length > 0) select.appendChild(group);
+            };
+
+            addGroup('Hausdienst', groupsState.hausdienst.distributions);
+            addGroup('Visiten', groupsState.visits.distributions);
+
+            // Restore selection if still valid
+            select.value = currentValue;
         }
 
         // MODALS
@@ -1039,11 +1079,20 @@
         }
 
         function resetDistributionBin() {
-            const bin = prompt("Neue Verteilungs-Bin ID eingeben:", CONFIG.DISTRIBUTION_BIN);
+            const bin = prompt("Neue Hausdienst-Bin ID eingeben:", CONFIG.DISTRIBUTION_BIN);
             if (bin) {
                 CONFIG.DISTRIBUTION_BIN = bin;
                 localStorage.setItem('hc-dist-bin', bin);
-                loadGroups();
+                loadGroups('hausdienst', bin);
+            }
+        }
+
+        function resetVisitsBin() {
+            const bin = prompt("Neue Visiten-Bin ID eingeben:", CONFIG.VISITS_BIN);
+            if (bin) {
+                CONFIG.VISITS_BIN = bin;
+                localStorage.setItem('hc-visits-bin', bin);
+                loadGroups('visits', bin);
             }
         }
 
