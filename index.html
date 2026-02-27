@@ -117,16 +117,18 @@
         }
 
         .btn-primary {
-            width: 100%;
-            padding: 0.75rem;
+            padding: 0.75rem 1.25rem;
             background: var(--primary);
             color: white;
-            border: none;
+            border: 1px solid var(--primary);
             border-radius: 8px;
             font-weight: 600;
+            font-size: 1rem;
             cursor: pointer;
             transition: background 0.2s;
-            margin-top: 1rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .btn-primary:hover {
@@ -346,16 +348,23 @@
         .modal-footer {
             display: flex;
             justify-content: flex-end;
+            align-items: center;
             gap: 12px;
+            margin-top: 1rem;
         }
 
         .btn-ghost {
-            padding: 8px 16px;
+            padding: 0.75rem 1.25rem;
             background: transparent;
             color: var(--text-muted);
-            border: none;
+            border: 1px solid transparent;
+            border-radius: 8px;
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 600;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .month-tabs {
@@ -412,7 +421,7 @@
                 <input type="password" id="pin-input" placeholder="••••">
             </div>
 
-            <button class="btn-primary" onclick="handleLogin()">Anmelden</button>
+            <button class="btn-primary" style="width: 100%;" onclick="handleLogin()">Anmelden</button>
             <div id="login-status"
                 style="font-size: 0.8rem; margin-top: 1rem; color: var(--text-muted); display: none;">Lade
                 Mitarbeiter...</div>
