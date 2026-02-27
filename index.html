@@ -501,7 +501,15 @@
         <!-- Board Section -->
         <section id="board-section" class="content-section active">
             <div class="board-header">
-                <h2>Tauschbörse</h2>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <h2>Tauschbörse</h2>
+                    <label
+                        style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; margin: 0; font-weight: 500; text-transform: none;">
+                        <input type="checkbox" id="filter-relevant-checkbox" style="width: auto; padding: 0;" checked
+                            onchange="renderPosts()">
+                        Nur für mich relevante Chats anzeigen
+                    </label>
+                </div>
                 <button class="btn-primary" style="width: auto; padding: 8px 16px;" onclick="openModal('new-post')">+
                     Neuer Eintrag</button>
             </div>
@@ -894,12 +902,32 @@
         function renderPosts() {
             const container = document.getElementById('posts-container');
             container.innerHTML = '';
-            if (posts.length === 0) {
-                container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Bisher keine Einträge.</div>';
+
+            const showOnlyRelevant = document.getElementById('filter-relevant-checkbox')?.checked;
+            const currentUserId = currentUser ? String(currentUser.id || currentUser.mitarbeiter_id) : null;
+            const isAdmin = currentUser && currentUser.role === 'Administrator';
+
+            let displayPosts = posts;
+
+            if (showOnlyRelevant && !isAdmin) {
+                displayPosts = posts.filter(post => {
+                    // Always show own posts
+                    if (String(post.authorId) === currentUserId) return true;
+
+                    // Show generic posts
+                    const groupLabel = post.tags && post.tags[0];
+                    if (!groupLabel) return true;
+
+                    // Show if member of target group
+                    return isUserInDienstGroup(groupLabel, post.targetDate);
+                });
+            }
+
+            if (displayPosts.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Keine relevanten Einträge gefunden.</div>';
                 return;
             }
-            const isAdmin = currentUser.role === 'Administrator';
-            [...posts].reverse().forEach(post => {
+            [...displayPosts].reverse().forEach(post => {
                 const card = document.createElement('div');
                 card.className = 'post-card';
                 card.id = `post-${post.id}`;
