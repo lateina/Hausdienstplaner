@@ -877,11 +877,11 @@
             if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
             const group = post.tags && post.tags[0] ? ` (${post.tags[0]})` : '';
-            let title = post.authorName + group;
+            let title = `${post.authorName}${group}`;
             let body = post.title;
 
             if (isReply && replyData) {
-                title = `Neue Antwort von ${replyData.authorName}`;
+                title = `${replyData.authorName} (Antwort)`;
                 body = `Zu: ${post.title}\n"${replyData.body}"`;
             }
 
