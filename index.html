@@ -834,8 +834,17 @@
             const to = [...new Set(recipients)].join(',');
             const dateInfo = post.targetDate ? ` am ${new Date(post.targetDate).toLocaleDateString('de-DE')}` : '';
             const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
-            const subject = encodeURIComponent(`Hausdienst-Tauschwunsch${dateInfo}: ${post.title}`);
-            const body = encodeURIComponent(`Hallo,\n\n${post.authorName} sucht einen Tausch für: "${post.title}"${dateInfo}\n\nDetails und Antwort hier im Tool:\n${shareUrl}`);
+            const subject = encodeURIComponent(`Anfrage Hausdienst-Tausch: ${post.title}${dateInfo}`);
+            const body = encodeURIComponent(
+                `Liebe Kolleginnen und Kollegen,\n\n` +
+                `${post.authorName} hat einen Tauschwunsch für den Hausdienst im Tool veröffentlicht:\n\n` +
+                `📅 Datum: ${post.targetDate ? new Date(post.targetDate).toLocaleDateString('de-DE') : 'Nicht angegeben'}\n` +
+                `🏷️ Gruppe: ${groupName || 'Alle'}\n` +
+                `📝 Betreff: ${post.title}\n\n` +
+                `Details und direkte Antwortmöglichkeit findet ihr hier:\n` +
+                `${shareUrl}\n\n` +
+                `Beste Grüße`
+            );
 
             console.log("Recipients found:", recipients);
             window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
