@@ -779,23 +779,51 @@
             const post = posts.find(p => p.id === postId);
             if (!post) return;
 
+            console.log("Sharing by email for post:", post);
+
             let recipients = [];
-            if (post.targetDate && post.tags && post.tags.length > 0) {
-                const targetDate = new Date(post.targetDate);
-                const monatId = `month_${targetDate.getFullYear()}_${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
-                const groupName = post.tags[0];
+            const groupName = post.tags && post.tags[0];
 
-                const month = monthsData.find(m => m.monat_id === monatId) ||
-                    monthsData.find(m => m.monat_id.startsWith(`month_${targetDate.getFullYear()}`)) ||
-                    monthsData[0];
+            if (groupName) {
+                let targetAssignments = null;
 
-                if (month && month.assignments && month.assignments[groupName]) {
-                    const assignedNames = Array.isArray(month.assignments[groupName]) ?
-                        month.assignments[groupName] : [month.assignments[groupName]];
+                if (post.targetDate) {
+                    const targetDate = new Date(post.targetDate);
+                    const monatId = `month_${targetDate.getFullYear()}_${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
 
-                    assignedNames.forEach(name => {
-                        const cleanName = typeof name === 'object' ? (name.name || name.mitarbeiter_name) : name;
-                        const emp = employees.find(e => (e.name === cleanName || e.mitarbeiter_name === cleanName));
+                    const month = monthsData.find(m => m.monat_id === monatId) ||
+                        monthsData.find(m => m.monat_id.startsWith(`month_${targetDate.getFullYear()}`));
+
+                    if (month && month.assignments) {
+                        targetAssignments = month.assignments;
+                    }
+                }
+
+                // Fallback to current global distributions
+                const assignments = targetAssignments || distributions || {};
+
+                // Reverse label lookup for keys like 'visite_46'
+                const reverseLabels = {
+                    'Station 46': 'visite_46',
+                    'Station 18': 'visite_18',
+                    'Station 19': 'visite_19'
+                };
+                const searchKey = reverseLabels[groupName] || groupName;
+                const assigned = assignments[searchKey];
+
+                if (assigned) {
+                    const names = Array.isArray(assigned) ? assigned : [assigned];
+                    names.forEach(n => {
+                        const nameString = (typeof n === 'object' ? (n.name || n.mitarbeiter_name) : n).trim();
+                        if (!nameString) return;
+
+                        // Robust name normalization & lookup
+                        const searchName = nameString.toLowerCase().replace(/,/g, '');
+                        const emp = employees.find(e => {
+                            const ename = (e.name || e.mitarbeiter_name || "").toLowerCase().replace(/,/g, '');
+                            return ename === searchName || ename.includes(searchName) || searchName.includes(ename);
+                        });
+
                         if (emp && (emp.email || emp.mitarbeiter_email)) {
                             recipients.push(emp.email || emp.mitarbeiter_email);
                         }
@@ -809,6 +837,7 @@
             const subject = encodeURIComponent(`Hausdienst-Tauschwunsch${dateInfo}: ${post.title}`);
             const body = encodeURIComponent(`Hallo,\n\n${post.authorName} sucht einen Tausch für: "${post.title}"${dateInfo}\n\nDetails und Antwort hier im Tool:\n${shareUrl}`);
 
+            console.log("Recipients found:", recipients);
             window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
         }
 
