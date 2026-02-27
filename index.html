@@ -753,7 +753,7 @@
 
             const dateInfo = post.targetDate ? ` am ${new Date(post.targetDate).toLocaleDateString('de-DE')}` : '';
             const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
-            const shareText = `Hausdienst-Tauschwunsch von ${post.authorName}${dateInfo}: "${post.title}". Details und Antwort hier im Tool:`;
+            const shareText = `Hallo zusammen, ich suche einen Tauschpartner für meinen Hausdienst${dateInfo} ("${post.title}"). Könnte jemand einspringen? Infos und Antwort hier:`;
 
             if (navigator.share) {
                 try {
