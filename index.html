@@ -740,7 +740,7 @@
                         <span class="action-link" style="color: #059669" onclick="sharePost(${post.id})">WhatsApp</span>
                         <span class="action-link" style="color: #6366f1" onclick="shareByEmail(${post.id})">Email</span>
                         ${isAdmin ? `<span class="action-link" onclick="markAsSeen(${post.id})">${post.adminSeen ? '✓ Gelesen' : 'Als gelesen markieren'}</span>` : ''}
-                        ${isAdmin || post.authorId === (currentUser.id || currentUser.mitarbeiter_id) ? `<span class="action-link" style="color: #ef4444" onclick="deletePost(${post.id})">Löschen</span>` : ''}
+                        ${isAdmin || String(post.authorId) === String(currentUser.id || currentUser.mitarbeiter_id) ? `<span class="action-link" style="color: #ef4444" onclick="deletePost(${post.id})">Löschen</span>` : ''}
                     </div>
                 `;
                 container.appendChild(card);
@@ -973,8 +973,8 @@
         async function deletePost(postId) {
             const post = posts.find(p => p.id === postId);
             if (!post) return;
-            const isAdmin = currentUser.role === 'Administrator';
-            const isAuthor = post.authorId === (currentUser.id || currentUser.mitarbeiter_id);
+            const currentUserId = String(currentUser.id || currentUser.mitarbeiter_id);
+            const isAuthor = String(post.authorId) === currentUserId;
 
             if (!isAdmin && !isAuthor) {
                 alert("Nur der Autor oder ein Administrator kann diesen Beitrag löschen.");
