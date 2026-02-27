@@ -789,6 +789,33 @@
             };
         }
 
+        function testNotification() {
+            if (!('Notification' in window)) {
+                alert("Dieses Gerät unterstützt leider keine Web-Benachrichtigungen.");
+                return;
+            }
+            if (Notification.permission === 'default') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') sendTest();
+                });
+            } else if (Notification.permission === 'granted') {
+                sendTest();
+            } else {
+                alert("Benachrichtigungen sind geblockt. Bitte in den Browsereinstellungen erlauben.");
+            }
+
+            function sendTest() {
+                try {
+                    new Notification('Dienste-Chat Test', {
+                        body: 'Glückwunsch! Benachrichtigungen funktionieren auf diesem Gerät. 🎉',
+                        icon: 'icon_tight_192.png'
+                    });
+                } catch (e) {
+                    alert("Fehler beim Senden der Benachrichtigung: " + e.message);
+                }
+            }
+        }
+
         function renderPosts() {
             const container = document.getElementById('posts-container');
             container.innerHTML = '';
