@@ -481,7 +481,7 @@
                 <div class="avatar" id="user-avatar">?</div>
                 <div>
                     <div style="font-weight: 700;" id="user-display-name">Gast</div>
-                    <div style="font-size: 0.75rem; color: var(--text-muted);" id="user-role">Assistenzarzt</div>
+                    <div style="display: none;" id="user-role"></div>
                 </div>
             </div>
             <div style="display: flex; gap: 8px;">
@@ -772,12 +772,7 @@
             document.getElementById('user-display-name').textContent = name;
             document.getElementById('user-avatar').textContent = name[0];
             const roleEl = document.getElementById('user-role');
-            if (name === 'Administrator') {
-                roleEl.style.display = 'none';
-            } else {
-                roleEl.style.display = 'block';
-                roleEl.textContent = currentUser.role || 'Assistenzarzt';
-            }
+            roleEl.style.display = 'none';
 
             await Promise.all([
                 loadBoard(),
