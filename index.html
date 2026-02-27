@@ -766,6 +766,7 @@
                 document.body.removeChild(dummy);
                 alert("Teilen-Link wurde in die Zwischenablage kopiert!");
             }
+
             async function shareByEmail(postId) {
                 const post = posts.find(p => p.id === postId);
                 if (!post) return;
