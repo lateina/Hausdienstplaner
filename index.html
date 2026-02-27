@@ -733,7 +733,7 @@
                         <span class="action-link" onclick="openReplyModal(${post.id})">Antworten</span>
                         <span class="action-link" style="color: #059669" onclick="sharePost(${post.id})">Teilen</span>
                         ${isAdmin ? `<span class="action-link" onclick="markAsSeen(${post.id})">${post.adminSeen ? '✓ Gelesen' : 'Als gelesen markieren'}</span>` : ''}
-                        ${isAdmin ? `<span class="action-link" style="color: #ef4444" onclick="deletePost(${post.id})">Löschen</span>` : ''}
+                        ${isAdmin || post.authorId === (currentUser.id || currentUser.mitarbeiter_id) ? `<span class="action-link" style="color: #ef4444" onclick="deletePost(${post.id})">Löschen</span>` : ''}
                     </div>
                 `;
                 container.appendChild(card);
@@ -918,7 +918,17 @@
         }
 
         async function deletePost(postId) {
-            if (!confirm("Löschen?")) return;
+            const post = posts.find(p => p.id === postId);
+            if (!post) return;
+            const isAdmin = currentUser.role === 'Administrator';
+            const isAuthor = post.authorId === (currentUser.id || currentUser.mitarbeiter_id);
+
+            if (!isAdmin && !isAuthor) {
+                alert("Nur der Autor oder ein Administrator kann diesen Beitrag löschen.");
+                return;
+            }
+
+            if (!confirm("Beitrag unwiderruflich löschen?")) return;
             posts = posts.filter(p => p.id !== postId);
             await savePosts();
             renderPosts();
