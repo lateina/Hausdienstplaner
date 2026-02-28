@@ -1110,11 +1110,9 @@
                     if (!cleanDistName || !cleanUserName) return false;
                     if (cleanDistName === cleanUserName) return true;
 
-                    const distWords = cleanDistName.split(' ').filter(w => w.length > 2);
-                    const userWords = cleanUserName.split(' ').filter(w => w.length > 2);
-
-                    // If any significant word matches exactly (e.g. "Haiberger")
-                    return distWords.some(dw => userWords.some(uw => dw === uw));
+                    // Fallback to substring matching if names are not exact
+                    // Avoid partial single-word loose matching (e.g. both having "med.")
+                    return cleanUserName.includes(cleanDistName) || cleanDistName.includes(cleanUserName);
                 };
 
                 // 1. Check specific group
