@@ -796,6 +796,13 @@
                 // Merge both lists together
                 employees = [...assistentenList, ...oberaerzteList];
 
+                // Sort alphabetically by name
+                employees.sort((a, b) => {
+                    const nameA = (a.name || a.mitarbeiter_name || "").toLowerCase();
+                    const nameB = (b.name || b.mitarbeiter_name || "").toLowerCase();
+                    return nameA.localeCompare(nameB, 'de');
+                });
+
                 renderNameSelect();
                 document.getElementById('login-status').style.display = 'none';
             } catch (e) {
