@@ -1120,7 +1120,12 @@
                     const ignoreList = ['dr', 'dr.', 'med', 'med.', 'prof', 'prof.'];
                     const distWords = cleanDistName.split(' ').filter(w => w.length > 2 && !ignoreList.includes(w));
                     const userWords = cleanUserName.split(' ').filter(w => w.length > 2 && !ignoreList.includes(w));
-                    return distWords.some(dw => userWords.some(uw => dw === uw));
+
+                    if (distWords.length === 0 || userWords.length === 0) return false;
+                    const distInUser = distWords.every(dw => userWords.includes(dw));
+                    const userInDist = userWords.every(uw => distWords.includes(uw));
+
+                    return distInUser || userInDist;
                 };
 
                 // 1. Check specific group
@@ -1238,7 +1243,10 @@
                                         const userWords = ename.split(' ').filter(w => w.length > 2 && !ignoreList.includes(w));
 
                                         if (ename === checkName) return true;
-                                        return distWords.some(dw => userWords.some(uw => dw === uw));
+                                        if (distWords.length === 0 || userWords.length === 0) return false;
+                                        const distInUser = distWords.every(dw => userWords.includes(dw));
+                                        const userInDist = userWords.every(uw => distWords.includes(uw));
+                                        return distInUser || userInDist;
                                     });
                                 }
                             }
