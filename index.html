@@ -759,39 +759,36 @@
         async function loadEmployees() {
             showStatus("Lade Mitarbeiter...");
             try {
-                const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.EMPLOYEE_BIN}/latest`, {
-                    headers: { 'X-Master-Key': CONFIG.API_KEY }
-                });
-                const data = await res.json();
-                if (!res.ok) {
-                    throw new Error(data.message || `HTTP ${res.status}`);
-                }
+                const OBERARZT_BIN = '694548d1d0ea881f403427e3';
 
-                let record = data.record;
-                // Handle different JSON structures
-                if (Array.isArray(record)) {
-                    employees = record;
-                } else if (record && typeof record === 'object') {
-                    // Try common keys if record is an object
-                    employees = record.employees || record.mitarbeiter || record.users || Object.values(record).find(val => Array.isArray(val)) || [];
-                } else {
-                    employees = [];
-                }
+                const [resAssistenten, resOberaerzte] = await Promise.all([
+                    fetch(`https://api.jsonbin.io/v3/b/${CONFIG.EMPLOYEE_BIN}/latest`, {
+                        headers: { 'X-Master-Key': CONFIG.API_KEY }
+                    }),
+                    fetch(`https://api.jsonbin.io/v3/b/${OBERARZT_BIN}/latest`, {
+                        headers: { 'X-Master-Key': CONFIG.API_KEY }
+                    })
+                ]);
 
-                // Manually inject Sabine Sag if not present in the external database
-                if (!employees.find(e => {
-                    const name = (e.name || e.mitarbeiter_name || "").toLowerCase();
-                    return name.includes('sabine sag') || name.includes('sag, sabine');
-                })) {
-                    employees.push({
-                        id: 'sabine_sag',
-                        mitarbeiter_id: 'sabine_sag',
-                        name: 'Sabine Sag',
-                        mitarbeiter_name: 'Sabine Sag',
-                        pin: '1234',
-                        role: 'User'
-                    });
-                }
+                const dataAssistenten = await resAssistenten.json();
+                const dataOberaerzte = await resOberaerzte.json();
+
+                if (!resAssistenten.ok) throw new Error(dataAssistenten.message || `HTTP ${resAssistenten.status}`);
+                if (!resOberaerzte.ok) throw new Error(dataOberaerzte.message || `HTTP ${resOberaerzte.status}`);
+
+                const extractEmployees = (record) => {
+                    if (Array.isArray(record)) return record;
+                    if (record && typeof record === 'object') {
+                        return record.employees || record.mitarbeiter || record.users || Object.values(record).find(val => Array.isArray(val)) || [];
+                    }
+                    return [];
+                };
+
+                const assistentenList = extractEmployees(dataAssistenten.record);
+                const oberaerzteList = extractEmployees(dataOberaerzte.record);
+
+                // Merge both lists together
+                employees = [...assistentenList, ...oberaerzteList];
 
                 renderNameSelect();
                 document.getElementById('login-status').style.display = 'none';
