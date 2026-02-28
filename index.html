@@ -785,7 +785,13 @@
                 };
 
                 const assistentenList = extractEmployees(dataAssistenten.record);
-                const oberaerzteList = extractEmployees(dataOberaerzte.record);
+                let oberaerzteList = extractEmployees(dataOberaerzte.record);
+
+                // User requested to ONLY include "Sabine Sag" from the Oberarzt list for now
+                oberaerzteList = oberaerzteList.filter(e => {
+                    const name = (e.name || e.mitarbeiter_name || "").toLowerCase();
+                    return name.includes('sabine sag') || name.includes('sag, sabine');
+                });
 
                 // Merge both lists together
                 employees = [...assistentenList, ...oberaerzteList];
