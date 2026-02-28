@@ -1073,7 +1073,13 @@
                     if (!isNaN(dateObj.getTime())) {
                         const monatId = `month_${dateObj.getFullYear()}_${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
                         const month = state.months.find(m => m.monat_id === monatId);
-                        if (month && month.assignments) distributions = month.assignments;
+
+                        // Fix: The JSON uses 'distributions' inside the month object, not 'assignments'
+                        if (month && month.distributions) {
+                            distributions = month.distributions;
+                        } else if (month && month.assignments) {
+                            distributions = month.assignments;
+                        }
                     }
                 }
 
@@ -1110,9 +1116,10 @@
                     if (!cleanDistName || !cleanUserName) return false;
                     if (cleanDistName === cleanUserName) return true;
 
-                    // Fallback to strict word matching (no partial substring matches like "med." or "Meier" vs "Meierhof")
-                    const distWords = cleanDistName.split(' ').filter(w => w.length > 3);
-                    const userWords = cleanUserName.split(' ').filter(w => w.length > 3);
+                    // Fallback to strict word matching (ignoring titles and tiny words)
+                    const ignoreList = ['dr', 'dr.', 'med', 'med.', 'prof', 'prof.'];
+                    const distWords = cleanDistName.split(' ').filter(w => w.length > 2 && !ignoreList.includes(w));
+                    const userWords = cleanUserName.split(' ').filter(w => w.length > 2 && !ignoreList.includes(w));
                     return distWords.some(dw => userWords.some(uw => dw === uw));
                 };
 
@@ -1223,11 +1230,12 @@
                                 const nameString = (rawName || "").toString().trim();
                                 if (nameString) {
                                     const checkName = nameString.toLowerCase().replace(/,/g, '');
-                                    const distWords = checkName.split(' ').filter(w => w.length > 3);
+                                    const ignoreList = ['dr', 'dr.', 'med', 'med.', 'prof', 'prof.'];
+                                    const distWords = checkName.split(' ').filter(w => w.length > 2 && !ignoreList.includes(w));
 
                                     emp = employees.find(e => {
                                         const ename = (e.name || e.mitarbeiter_name || "").toLowerCase().replace(/,/g, '');
-                                        const userWords = ename.split(' ').filter(w => w.length > 3);
+                                        const userWords = ename.split(' ').filter(w => w.length > 2 && !ignoreList.includes(w));
 
                                         if (ename === checkName) return true;
                                         return distWords.some(dw => userWords.some(uw => dw === uw));
