@@ -796,11 +796,24 @@
                 // Merge both lists together
                 employees = [...assistentenList, ...oberaerzteList];
 
-                // Sort alphabetically by name
+                // Sort alphabetically by Last Name
+                const getLastName = (nameStr) => {
+                    if (!nameStr) return "";
+                    let n = nameStr.trim();
+                    // Remove academic titles for sorting
+                    n = n.replace(/^(dr\.\s*|med\.\s*|prof\.\s*)+/i, '').trim();
+
+                    if (n.includes(',')) {
+                        return n.split(',')[0].trim().toLowerCase();
+                    }
+                    const parts = n.split(' ');
+                    return parts[parts.length - 1].toLowerCase();
+                };
+
                 employees.sort((a, b) => {
-                    const nameA = (a.name || a.mitarbeiter_name || "").toLowerCase();
-                    const nameB = (b.name || b.mitarbeiter_name || "").toLowerCase();
-                    return nameA.localeCompare(nameB, 'de');
+                    const nameA = a.name || a.mitarbeiter_name || "";
+                    const nameB = b.name || b.mitarbeiter_name || "";
+                    return getLastName(nameA).localeCompare(getLastName(nameB), 'de');
                 });
 
                 renderNameSelect();
