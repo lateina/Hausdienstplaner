@@ -1085,7 +1085,7 @@
                 const nameCheck = (n) => {
                     if (!n) return false;
 
-                    // Strictly ID-based matching
+                    // 1. ID-based matching (robust)
                     if (typeof n === 'object' && currentUser) {
                         const nId = n.employeeId || n.id || n.mitarbeiter_id;
                         const cId = currentUser.id || currentUser.mitarbeiter_id;
@@ -1094,7 +1094,25 @@
                         }
                     }
 
-                    return false;
+                    // 2. Name-based matching (fallback)
+                    const normalize = (str) => {
+                        return String(str)
+                            .toLowerCase()
+                            .replace(/\(.*\)/g, '') // Remove everything in parentheses
+                            .replace(/,/g, ' ')      // Commas as spaces
+                            .replace(/\s+/g, ' ')    // Normalize whitespace
+                            .trim();
+                    };
+
+                    const cleanDistName = normalize(typeof n === 'object' ? (n.name || n.mitarbeiter_name || "") : n);
+                    const cleanUserName = normalize(currentName);
+
+                    if (!cleanDistName || !cleanUserName) return false;
+                    if (cleanDistName === cleanUserName) return true;
+
+                    // Fallback to substring matching if names are not exact
+                    // Avoid partial single-word loose matching (e.g. both having "med.")
+                    return cleanUserName.includes(cleanDistName) || cleanDistName.includes(cleanUserName);
                 };
 
                 // 1. Check specific group
@@ -1190,11 +1208,24 @@
                         names.forEach(n => {
                             let emp = null;
 
-                            // Strictly ID-based matching
+                            // 1. ID-based matching
                             if (typeof n === 'object') {
                                 const nId = n.employeeId || n.id || n.mitarbeiter_id;
                                 if (nId) {
                                     emp = employees.find(e => String(e.id || e.mitarbeiter_id) === String(nId));
+                                }
+                            }
+
+                            // 2. Name-based matching (fallback)
+                            if (!emp) {
+                                const rawName = typeof n === 'object' ? (n.name || n.mitarbeiter_name) : n;
+                                const nameString = (rawName || "").toString().trim();
+                                if (nameString) {
+                                    const searchName = nameString.toLowerCase().replace(/,/g, '');
+                                    emp = employees.find(e => {
+                                        const ename = (e.name || e.mitarbeiter_name || "").toLowerCase().replace(/,/g, '');
+                                        return ename === searchName || ename.includes(searchName) || searchName.includes(ename);
+                                    });
                                 }
                             }
 
