@@ -1110,9 +1110,10 @@
                     if (!cleanDistName || !cleanUserName) return false;
                     if (cleanDistName === cleanUserName) return true;
 
-                    // Fallback to substring matching if names are not exact
-                    // Avoid partial single-word loose matching (e.g. both having "med.")
-                    return cleanUserName.includes(cleanDistName) || cleanDistName.includes(cleanUserName);
+                    // Fallback to strict word matching (no partial substring matches like "med." or "Meier" vs "Meierhof")
+                    const distWords = cleanDistName.split(' ').filter(w => w.length > 3);
+                    const userWords = cleanUserName.split(' ').filter(w => w.length > 3);
+                    return distWords.some(dw => userWords.some(uw => dw === uw));
                 };
 
                 // 1. Check specific group
@@ -1221,10 +1222,15 @@
                                 const rawName = typeof n === 'object' ? (n.name || n.mitarbeiter_name) : n;
                                 const nameString = (rawName || "").toString().trim();
                                 if (nameString) {
-                                    const searchName = nameString.toLowerCase().replace(/,/g, '');
+                                    const checkName = nameString.toLowerCase().replace(/,/g, '');
+                                    const distWords = checkName.split(' ').filter(w => w.length > 3);
+
                                     emp = employees.find(e => {
                                         const ename = (e.name || e.mitarbeiter_name || "").toLowerCase().replace(/,/g, '');
-                                        return ename === searchName || ename.includes(searchName) || searchName.includes(ename);
+                                        const userWords = ename.split(' ').filter(w => w.length > 3);
+
+                                        if (ename === checkName) return true;
+                                        return distWords.some(dw => userWords.some(uw => dw === uw));
                                     });
                                 }
                             }
