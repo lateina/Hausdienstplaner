@@ -909,7 +909,7 @@
 
                 if (lastSeenPostId) {
                     newPosts.forEach(post => {
-                        const isAuthor = String(post.authorId) === String(currentUser.id || currentUser.mitarbeiter_id);
+                        const isAuthor = String(post.mitarbeiterId || post.authorId) === String(currentUser.id || currentUser.mitarbeiter_id);
 
                         // Newly added post
                         if (post.id > lastSeenPostId && !isAuthor) {
@@ -991,7 +991,7 @@
             if (showOnlyRelevant && !isAdmin) {
                 displayPosts = posts.filter(post => {
                     // Always show own posts
-                    if (String(post.authorId) === currentUserId) return true;
+                    if (String(post.mitarbeiterId || post.authorId) === currentUserId) return true;
 
                     // Show generic posts
                     const groupLabel = post.tags && post.tags[0];
@@ -1035,12 +1035,12 @@
                     <div>${repliesHtml}</div>
                     <div class="post-actions" style="margin-top: 1.5rem;">
                         <span class="action-link" onclick="openReplyModal(${post.id})">Antworten</span>
-                        ${isAdmin || String(post.authorId) === currentUserId ? `
+                        ${isAdmin || String(post.mitarbeiterId || post.authorId) === currentUserId ? `
                             <span class="action-link" style="color: #059669" onclick="sharePost(${post.id})">WhatsApp</span>
                             <span class="action-link" style="color: #6366f1" onclick="shareByEmail(${post.id})">Email</span>
                         ` : ''}
                         ${isAdmin ? `<span class="action-link" onclick="markAsSeen(${post.id})">${post.adminSeen ? '✓ Gelesen' : 'Als gelesen markieren'}</span>` : ''}
-                        ${isAdmin || String(post.authorId) === currentUserId ? `<span class="action-link" style="color: #ef4444" onclick="deletePost(${post.id})">Löschen</span>` : ''}
+                        ${isAdmin || String(post.mitarbeiterId || post.authorId) === currentUserId ? `<span class="action-link" style="color: #ef4444" onclick="deletePost(${post.id})">Löschen</span>` : ''}
                     </div>
                 `;
                 container.appendChild(card);
@@ -1084,6 +1084,17 @@
 
                 const nameCheck = (n) => {
                     if (!n) return false;
+
+                    // 1. ID-based matching (robust)
+                    if (typeof n === 'object' && currentUser) {
+                        const nId = n.employeeId || n.id || n.mitarbeiter_id;
+                        const cId = currentUser.id || currentUser.mitarbeiter_id;
+                        if (nId && cId && String(nId) === String(cId)) {
+                            return true;
+                        }
+                    }
+
+                    // 2. Name-based matching (fallback)
                     const normalize = (str) => {
                         return String(str)
                             .toLowerCase()
@@ -1197,14 +1208,28 @@
                     if (assigned) {
                         const names = Array.isArray(assigned) ? assigned : [assigned];
                         names.forEach(n => {
-                            const nameString = (typeof n === 'object' ? (n.name || n.mitarbeiter_name) : n).trim();
-                            if (!nameString) return;
+                            let emp = null;
 
-                            const searchName = nameString.toLowerCase().replace(/,/g, '');
-                            const emp = employees.find(e => {
-                                const ename = (e.name || e.mitarbeiter_name || "").toLowerCase().replace(/,/g, '');
-                                return ename === searchName || ename.includes(searchName) || searchName.includes(ename);
-                            });
+                            // 1. ID-based matching
+                            if (typeof n === 'object') {
+                                const nId = n.employeeId || n.id || n.mitarbeiter_id;
+                                if (nId) {
+                                    emp = employees.find(e => String(e.id || e.mitarbeiter_id) === String(nId));
+                                }
+                            }
+
+                            // 2. Name-based matching (fallback)
+                            if (!emp) {
+                                const rawName = typeof n === 'object' ? (n.name || n.mitarbeiter_name) : n;
+                                const nameString = (rawName || "").toString().trim();
+                                if (nameString) {
+                                    const searchName = nameString.toLowerCase().replace(/,/g, '');
+                                    emp = employees.find(e => {
+                                        const ename = (e.name || e.mitarbeiter_name || "").toLowerCase().replace(/,/g, '');
+                                        return ename === searchName || ename.includes(searchName) || searchName.includes(ename);
+                                    });
+                                }
+                            }
 
                             if (emp && (emp.email || emp.mitarbeiter_email)) {
                                 recipients.push(emp.email || emp.mitarbeiter_email);
@@ -1398,7 +1423,7 @@
 
             const newPost = {
                 id: Date.now(),
-                authorId: currentUser.id || currentUser.mitarbeiter_id,
+                mitarbeiterId: currentUser.id || currentUser.mitarbeiter_id,
                 authorName: currentUser.name || currentUser.mitarbeiter_name,
                 title, body,
                 targetDate: date,
@@ -1447,7 +1472,7 @@
             if (!post) return;
             const isAdmin = isCurrentUserAdmin();
             const currentUserId = String(currentUser.id || currentUser.mitarbeiter_id);
-            const isAuthor = String(post.authorId) === currentUserId;
+            const isAuthor = String(post.mitarbeiterId || post.authorId) === currentUserId;
 
             if (!isAdmin && !isAuthor) {
                 alert("Nur der Autor oder ein Administrator kann diesen Beitrag löschen.");
