@@ -778,6 +778,21 @@
                     employees = [];
                 }
 
+                // Manually inject Sabine Sag if not present in the external database
+                if (!employees.find(e => {
+                    const name = (e.name || e.mitarbeiter_name || "").toLowerCase();
+                    return name.includes('sabine sag') || name.includes('sag, sabine');
+                })) {
+                    employees.push({
+                        id: 'sabine_sag',
+                        mitarbeiter_id: 'sabine_sag',
+                        name: 'Sabine Sag',
+                        mitarbeiter_name: 'Sabine Sag',
+                        pin: '1234',
+                        role: 'User'
+                    });
+                }
+
                 renderNameSelect();
                 document.getElementById('login-status').style.display = 'none';
             } catch (e) {
