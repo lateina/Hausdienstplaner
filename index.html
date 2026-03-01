@@ -1174,6 +1174,7 @@
                     else if (groupLabel.includes('3. Hausdienst')) card.style.backgroundColor = '#faf5ff'; // Sehr blasses Lila
                     else if (groupLabel.includes('Echo')) card.style.backgroundColor = '#fffff0'; // Sehr blasses Gelb
                     else if (groupLabel.includes('Broncho')) card.style.backgroundColor = '#fff5f5'; // Sehr blasses Rot
+                    else if (groupLabel.includes('Kardio')) card.style.backgroundColor = '#fdf4ff'; // Sehr blasses Pink (Fuchsia)
                     else if (groupLabel.includes('Station')) card.style.backgroundColor = '#f8fafc'; // Sehr blasses Grau
                 }
 
@@ -1530,7 +1531,6 @@
             };
 
             Object.entries(groupsState[type].distributions).forEach(([key, list]) => {
-                if (key === 'Kardio-Hintergrund') return;
                 const groupName = labels[key] || key;
                 const card = document.createElement('div');
                 card.className = 'group-card';
@@ -1565,7 +1565,7 @@
                 group.label = categoryLabel;
                 Object.keys(distributions).forEach(key => {
                     // Skip technical groups and non-service groups
-                    if (['pool', 'excluded', 'Kardio-Hintergrund'].includes(key) || key.startsWith('Wegen Schichtdienst')) return;
+                    if (['pool', 'excluded'].includes(key) || key.startsWith('Wegen Schichtdienst')) return;
                     const opt = document.createElement('option');
                     opt.value = labels[key] || key;
                     opt.textContent = labels[key] || key;
