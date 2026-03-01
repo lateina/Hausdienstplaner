@@ -1341,6 +1341,99 @@
             select.value = currentValue;
         }
 
+        function renderGroupTabs(type, activeId) {
+            const container = document.getElementById(`${type}-tabs`);
+            if (!container) return;
+            container.innerHTML = '';
+            groupsState[type].months.forEach(month => {
+                const tab = document.createElement('div');
+                const isActive = activeId && month.monat_id === activeId;
+                tab.className = `month-tab ${isActive ? 'active' : ''}`;
+                tab.textContent = month.name || month.monat_id;
+                tab.onclick = () => {
+                    renderGroupTabs(type, month.monat_id);
+                    selectCategoryMonth(type, month.monat_id);
+                };
+                container.appendChild(tab);
+            });
+        }
+
+        function selectCategoryMonth(type, monthId) {
+            const month = groupsState[type].months.find(m => m.monat_id === monthId);
+            if (month) {
+                groupsState[type].distributions = month.assignments || {};
+                const statusEl = document.getElementById(`${type}-status`);
+                if (statusEl) statusEl.textContent = `Planung für ${month.name || month.monat_id}`;
+                renderCategoryGroups(type);
+                populateGroupSelect();
+            }
+        }
+
+        function renderCategoryGroups(type) {
+            const container = document.getElementById(`${type}-container`);
+            if (!container) return;
+            container.innerHTML = '';
+            const labels = {
+                'visite_46': 'Station 46', 'visite_18': 'Station 18', 'visite_19': 'Station 19',
+                '1. Hausdienst': '1. Hausdienst', '2. Hausdienst': '2. Hausdienst', '3. Hausdienst': '3. Hausdienst',
+                'Echo-Hintergrund': 'Echo-Hintergrund', 'Broncho-Hintergrund': 'Broncho-Hintergrund', 'Kardio-Hintergrund': 'Kardio-Hintergrund',
+                'pool': 'Pool / Springer', 'excluded': 'Abwesend / Elternzeit'
+            };
+            Object.entries(groupsState[type].distributions).forEach(([key, list]) => {
+                const groupName = labels[key] || key;
+                const card = document.createElement('div');
+                card.className = 'group-card';
+                const employeesList = Array.isArray(list) ? list : (list ? [list] : []);
+                card.innerHTML = `
+                    <div class="group-name">${groupName}</div>
+                    <ul class="emp-list">
+                        ${employeesList.map(emp => `
+                            <li class="emp-item">${(typeof emp === 'object' ? (emp.name || emp.mitarbeiter_name) : emp)}</li>
+                        `).join('') || '<li style="color: #ccc; font-style: italic;">Keine Zuordnung</li>'}
+                    </ul>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function requestNotificationPermission() {
+            if (!('Notification' in window)) return;
+            if (Notification.permission === 'default') {
+                document.getElementById('btn-notifications').style.display = 'block';
+            } else {
+                document.getElementById('btn-notifications').style.display = 'none';
+            }
+        }
+
+        async function requestNotificationPermissionUI() {
+            if ('Notification' in window) {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    document.getElementById('btn-notifications').style.display = 'none';
+                    alert('Benachrichtigungen aktiviert!');
+                }
+            }
+        }
+
+        function checkIosPrompt() {
+            const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+            const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator.standalone) ||
+                window.matchMedia('(display-mode: standalone)').matches;
+            if (isIos() && !isInStandaloneMode() && !localStorage.getItem('hc-ios-prompt-dismissed')) {
+                setTimeout(() => { document.getElementById('ios-prompt').classList.add('show'); }, 2000);
+            }
+        }
+
+        function checkInstalledPrompt() {
+            const isStandalone = ('standalone' in window.navigator) && (window.navigator.standalone) ||
+                window.matchMedia('(display-mode: standalone)').matches;
+            if (isStandalone()) {
+                localStorage.setItem('hc-pwa-installed', 'true');
+            } else if (localStorage.getItem('hc-pwa-installed') === 'true' && !localStorage.getItem('hc-installed-prompt-dismissed')) {
+                setTimeout(() => { document.getElementById('installed-prompt').classList.add('show'); }, 1500);
+            }
+        }
+
         // --- Reminders ---
         function checkUpcomingReminders() {
             if (!('Notification' in window) || Notification.permission !== 'granted' || !currentUser) return;
