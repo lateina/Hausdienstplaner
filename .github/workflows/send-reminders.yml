@@ -31,6 +31,6 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
-          CHAT_BIN_ID: '67c1e550ad19ca34f813c0b5'
+          CHAT_BIN_ID: '69a1781cae596e708f4efed8'
           EMP_BIN_ID: '699333dcd0ea881f40bf132f'
         run: node scripts/mail_reminders.js

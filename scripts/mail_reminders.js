@@ -20,19 +20,35 @@ async function checkAndSendReminders() {
 
     try {
         // 1. Fetch Chat Posts
+        console.log(`Fetching Chat data from bin: ${CHAT_BIN_ID}`);
         const chatRes = await fetch(`https://api.jsonbin.io/v3/b/${CHAT_BIN_ID}/latest`, {
             headers: { 'X-Master-Key': JSONBIN_KEY }
         });
         const chatData = await chatRes.json();
-        const posts = chatData.record.posts || [];
+
+        if (!chatRes.ok) {
+            console.error("Failed to fetch Chat data:", chatData);
+            throw new Error(`Chat API error: ${chatRes.status}`);
+        }
+
+        const posts = (chatData.record && chatData.record.posts) || [];
+        console.log(`Found ${posts.length} posts.`);
 
         // 2. Fetch Employee Emails
+        console.log(`Fetching Employee data from bin: ${EMP_BIN_ID}`);
         const empRes = await fetch(`https://api.jsonbin.io/v3/b/${EMP_BIN_ID}/latest`, {
             headers: { 'X-Master-Key': JSONBIN_KEY }
         });
         const empData = await empRes.json();
+
+        if (!empRes.ok) {
+            console.error("Failed to fetch Employee data:", empData);
+            throw new Error(`Employee API error: ${empRes.status}`);
+        }
+
         const employees = Array.isArray(empData.record) ? empData.record :
             (empData.record.employees || empData.record.mitarbeiter || Object.values(empData.record).find(val => Array.isArray(val)) || []);
+        console.log(`Loaded email data for employees.`);
 
         // 3. Setup Nodemailer
         const transporter = nodemailer.createTransport({
@@ -61,6 +77,7 @@ async function checkAndSendReminders() {
             const diffTime = targetDate.getTime() - now.getTime();
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
+            // Remind 7 days before
             if (diffDays === 7) {
                 let authorEmail = null;
                 const authorId = post.mitarbeiterId || post.authorId;
