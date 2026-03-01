@@ -1320,7 +1320,7 @@
             const dienstTyp = getDienstTyp(groupName);
 
             const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
-            const shareText = `Hallo zusammen, ich suche einen Tauschpartner für meinen ${dienstTyp}${dateInfo} ("${post.title}").\n\nKönnte jemand von euch tauschen? Ihr könnt mir direkt hier antworten (entweder klickt ihr auf den Link oder – für die beste Experience – ihr öffnet direkt die installierte App):`;
+            const shareText = `Hallo zusammen, ich suche einen Tauschpartner für meinen ${dienstTyp}${dateInfo} ("${post.title}").\n\nKönnte jemand von euch tauschen? Ihr könnt mir direkt hier antworten (Link) oder – für die beste Experience – ihr öffnet direkt die installierte App):`;
 
             if (navigator.share) {
                 try {
@@ -1432,7 +1432,7 @@
                 `Datum: ${dateRangeStr || 'Siehe Link'}\n` +
                 `Gruppe: ${groupName || 'Dienst'}\n` +
                 `Info: ${post.title}\n\n` +
-                `Könnte jemand von euch tauschen? Ihr könnt mir direkt hier antworten (entweder klickt ihr auf den Link oder – für die beste Experience – ihr öffnet direkt die installierte App):\n` +
+                `Könnte jemand von euch tauschen? Ihr könnt mir direkt hier antworten (Link) oder – für die beste Experience – ihr öffnet direkt die installierte App):\n` +
                 `${shareUrl}\n\n` +
                 `Vielen Dank und viele Grüße,\n` +
                 `${post.authorName}`
