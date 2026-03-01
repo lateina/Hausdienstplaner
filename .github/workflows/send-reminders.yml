@@ -21,16 +21,12 @@ jobs:
           node-version: '18'
           
       - name: Install dependencies
-        run: cd scripts && npm install nodemailer node-fetch
+        run: cd scripts && npm install resend node-fetch
         
       - name: Run reminder script
         env:
           JSONBIN_KEY: ${{ secrets.JSONBIN_KEY }}
-          SMTP_HOST: ${{ secrets.SMTP_HOST }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           CHAT_BIN_ID: '67c1e550ad19ca34f813c0b5'
           EMP_BIN_ID: '699333dcd0ea881f40bf132f'
         run: node scripts/mail_reminders.js

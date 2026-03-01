@@ -1,20 +1,15 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 const JSONBIN_KEY = process.env.JSONBIN_KEY;
 const CHAT_BIN_ID = process.env.CHAT_BIN_ID;
 const EMP_BIN_ID = process.env.EMP_BIN_ID;
-
-const SMTP_HOST = process.env.SMTP_HOST;
-const SMTP_PORT = process.env.SMTP_PORT || 587;
-const SMTP_USER = process.env.SMTP_USER;
-const SMTP_PASS = process.env.SMTP_PASS;
-const EMAIL_FROM = process.env.EMAIL_FROM || SMTP_USER;
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 async function checkAndSendReminders() {
     console.log("Starting Reminder Check...");
 
-    if (!JSONBIN_KEY || !SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-        console.error("Missing required environment variables (Secrets). Aborting.");
+    if (!JSONBIN_KEY || !RESEND_API_KEY) {
+        console.error("Missing required environment variables (JSONBIN_KEY or RESEND_API_KEY). Aborting.");
         process.exit(1);
     }
 
@@ -36,16 +31,8 @@ async function checkAndSendReminders() {
         const employees = Array.isArray(empData.record) ? empData.record :
             (empData.record.employees || empData.record.mitarbeiter || Object.values(empData.record).find(val => Array.isArray(val)) || []);
 
-        // 3. Setup Nodemailer
-        const transporter = nodemailer.createTransport({
-            host: SMTP_HOST,
-            port: SMTP_PORT,
-            secure: SMTP_PORT == 465, // true for 465, false for other ports
-            auth: {
-                user: SMTP_USER,
-                pass: SMTP_PASS
-            }
-        });
+        // 3. Setup Resend
+        const resend = new Resend(RESEND_API_KEY);
 
         const now = new Date();
         now.setHours(0, 0, 0, 0);
@@ -86,16 +73,21 @@ async function checkAndSendReminders() {
 
                 if (authorEmail) {
                     const group = post.tags && post.tags[0] ? ` (${post.tags[0]})` : '';
-                    const mailOptions = {
-                        from: EMAIL_FROM,
-                        to: authorEmail,
-                        subject: `Erinnerung: Tauschgesuch für deinen Dienst am ${targetDate.toLocaleDateString('de-DE')} ist noch offen`,
-                        text: `Hallo ${post.authorName},\n\ndein Dienst${group} am ${targetDate.toLocaleDateString('de-DE')} ist in genau 7 Tagen fällig, aber dein Tauschgesuch ("${post.title}") ist im Dienste-Chat aktuell noch offen / nicht als erledigt markiert.\n\nFalls du den Dienst inzwischen tauschen konntest, logge dich bitte kurz ins Message Board ein und markiere das Gesuch als "Erledigt".\n\nViele Grüße\nDein Dienste-Chat Bot`
-                    };
 
-                    console.log(`Sending email to ${authorEmail} for post ID ${post.id}`);
-                    await transporter.sendMail(mailOptions);
-                    emailsSent++;
+                    console.log(`Sending email via Resend to ${authorEmail} for post ID ${post.id}`);
+
+                    try {
+                        const data = await resend.emails.send({
+                            from: 'Hausdienst-Bot <onboarding@resend.dev>',
+                            to: authorEmail,
+                            subject: `Erinnerung: Tauschgesuch für deinen Dienst am ${targetDate.toLocaleDateString('de-DE')} ist noch offen`,
+                            text: `Hallo ${post.authorName},\n\ndein Dienst${group} am ${targetDate.toLocaleDateString('de-DE')} ist in genau 7 Tagen fällig, aber dein Tauschgesuch ("${post.title}") ist im Dienste-Chat aktuell noch offen / nicht als erledigt markiert.\n\nFalls du den Dienst inzwischen tauschen konntest, logge dich bitte kurz ins Message Board ein und markiere das Gesuch als "Erledigt".\n\nViele Grüße\nDein Dienste-Chat Bot`
+                        });
+                        console.log("Success:", data);
+                        emailsSent++;
+                    } catch (err) {
+                        console.error('Error sending email via Resend API:', err);
+                    }
                 } else {
                     console.warn(`Could not find an email address for post author: ${post.authorName} (ID: ${authorId})`);
                 }
