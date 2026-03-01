@@ -1629,14 +1629,17 @@
             const sentRemindersRaw = localStorage.getItem('hc-reminders-sent');
             const sentReminders = sentRemindersRaw ? JSON.parse(sentRemindersRaw) : [];
 
+            const todayStr = now.toISOString().split('T')[0];
+
             posts.forEach(post => {
                 // Only remind the author, and only if the post is not done/erledigt
                 if (String(post.mitarbeiterId || post.authorId) !== String(currentUser.id || currentUser.mitarbeiter_id)) return;
                 if (post.isDone) return;
                 if (!post.targetDate) return;
 
-                // Already sent a reminder for this specific post?
-                if (sentReminders.includes(post.id)) return;
+                // Already sent a reminder for this specific post today?
+                const reminderKey = `hc-reminder-${post.id}-${todayStr}`;
+                if (localStorage.getItem(reminderKey)) return;
 
                 const targetDate = new Date(post.targetDate);
                 targetDate.setHours(0, 0, 0, 0);
@@ -1648,21 +1651,15 @@
                 if (targetDate > now && diffDays <= 7) {
                     const group = post.tags && post.tags[0] ? ` (${post.tags[0]})` : '';
                     const title = `Erinnerung: Tausch offen!`;
-                    const body = `Dein Dienst ${group} am ${targetDate.toLocaleDateString('de-DE')} ist in ${diffDays} Tag(en) und noch nicht erledigt! ("${post.title}")`;
+                    const body = `Dein Dienst am ${targetDate.toLocaleDateString('de-DE')} ("${post.title}") ist noch nicht als erledigt markiert.`;
 
-                    const notification = new Notification(title, {
+                    new Notification(title, {
                         body: body,
                         icon: 'icon_tight_192.png'
                     });
 
-                    notification.onclick = () => {
-                        window.focus();
-                        scrollToPost(post.id);
-                    };
-
-                    // Mark as sent
-                    sentReminders.push(post.id);
-                    localStorage.setItem('hc-reminders-sent', JSON.stringify(sentReminders));
+                    // Mark as sent for TODAY
+                    localStorage.setItem(reminderKey, 'true');
                 }
             });
         }
