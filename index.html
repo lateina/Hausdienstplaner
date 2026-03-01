@@ -1498,12 +1498,13 @@
                         item.style.display = item.textContent.toLowerCase().includes(term) ? 'block' : 'none';
                     });
                 });
-            }
-            init();
+                init();
+                checkIosPrompt();
+                checkInstalledPrompt();
 
-            // Auto-refresh groups
-            setInterval(() => { if (currentUser) { loadGroups('hausdienst', CONFIG.DISTRIBUTION_BIN); loadGroups('visits', CONFIG.VISITS_BIN); } }, 300000);
-        });
+                // Auto-refresh groups
+                setInterval(() => { if (currentUser) { loadGroups('hausdienst', CONFIG.DISTRIBUTION_BIN); loadGroups('visits', CONFIG.VISITS_BIN); } }, 300000);
+            });
     </script>
 </body>
 
