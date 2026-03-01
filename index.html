@@ -52,9 +52,12 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
+            /* Changed from height to min-height */
             width: 100%;
             padding: 20px;
+            overflow-y: auto;
+            /* Allow scrolling on small devices if content gets too tall */
         }
 
         .login-card {
