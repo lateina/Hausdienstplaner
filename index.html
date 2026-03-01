@@ -767,6 +767,18 @@
         <div class="ios-prompt-arrow"></div>
     </div>
 
+    <!-- Installed PWA Prompt (for standard browser tabs) -->
+    <div id="installed-prompt" class="ios-prompt">
+        <div class="ios-prompt-content">
+            <div class="ios-prompt-title">App ist installiert ✨</div>
+            <div class="ios-prompt-text">
+                Du hast die App bereits auf deinem Gerät. Bitte öffne sie über deinen Home-Bildschirm für das beste
+                Erlebnis!
+            </div>
+        </div>
+        <button class="ios-prompt-close" onclick="dismissInstalledPrompt()">✕</button>
+    </div>
+
     <script>
         // CONFIG
         const CONFIG = {
@@ -1750,8 +1762,44 @@
             // Optional: You could use a timestamp here to show it again after X days
         }
 
-        // Run check on load
-        window.addEventListener('load', checkIosPrompt);
+        // --- Installed PWA Prompt Logic ---
+        function checkInstalledPrompt() {
+            const isStandalone = () => {
+                return ('standalone' in window.navigator) && (window.navigator.standalone) ||
+                    window.matchMedia('(display-mode: standalone)').matches;
+            };
+
+            // If running as PWA (Standalone), save the flag permanently
+            if (isStandalone()) {
+                localStorage.setItem('hc-pwa-installed', 'true');
+            } else {
+                // If running in browser tab, check if we know it's installed
+                const isInstalled = localStorage.getItem('hc-pwa-installed') === 'true';
+                const promptDismissed = localStorage.getItem('hc-installed-prompt-dismissed') === 'true';
+
+                if (isInstalled && !promptDismissed) {
+                    setTimeout(() => {
+                        document.getElementById('installed-prompt').classList.add('show');
+                    }, 1500);
+                }
+            }
+        }
+
+        function dismissInstalledPrompt() {
+            document.getElementById('installed-prompt').classList.remove('show');
+            localStorage.setItem('hc-installed-prompt-dismissed', 'true');
+        }
+
+        // Listen for standard installation events (Android/Desktop Chrome)
+        window.addEventListener('appinstalled', () => {
+            localStorage.setItem('hc-pwa-installed', 'true');
+        });
+
+        // Run checks on load
+        window.addEventListener('load', () => {
+            checkIosPrompt();
+            checkInstalledPrompt();
+        });
 
     </script>
 </body>
