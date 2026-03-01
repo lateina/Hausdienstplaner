@@ -1,10 +1,13 @@
 {
   "name": "Dienste-Chat Med II",
   "short_name": "Dienste-Chat",
-  "description": "Nachrichtenboard für Assistenzärzte zur Koordination von Hausdiensten.",
+  "description": "Nachrichtenboard für Ärztete zur Koordination von Diensten.",
   "start_url": "./index.html",
   "scope": ".",
   "display": "standalone",
+  "author": {
+    "name": "Stefan Wagner"
+  },
   "url_handlers": [
     {
       "origin": "https://lateina.github.io"
