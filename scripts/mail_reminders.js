@@ -19,20 +19,36 @@ async function checkAndSendReminders() {
     }
 
     try {
-        // 1. Fetch Chat Posts
-        console.log(`Step 1: Fetching Chat data from bin: ${CHAT_BIN_ID}`);
-        const chatRes = await fetch(`https://api.jsonbin.io/v3/b/${CHAT_BIN_ID}/latest`, {
-            headers: { 'X-Master-Key': JSONBIN_KEY }
-        });
+        // 1. Fetch Chat Posts from Firebase Firestore (REST API)
+        const FIREBASE_PROJECT_ID = 'dienste-chat';
+        console.log(`Step 1: Fetching Chat data from Firebase Firestore: ${FIREBASE_PROJECT_ID}`);
+
+        // Firestore REST API URL: https://firestore.googleapis.com/v1/projects/{project_id}/databases/(default)/documents/{collection_path}
+        const chatRes = await fetch(`https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/posts`);
         const chatData = await chatRes.json();
 
         if (!chatRes.ok) {
-            console.error("ERROR: Failed to fetch Chat data:", chatData);
-            throw new Error(`Chat API error: ${chatRes.status}`);
+            console.error("ERROR: Failed to fetch Chat data from Firebase:", chatData);
+            throw new Error(`Firebase API error: ${chatRes.status}`);
         }
 
-        const posts = (chatData.record && chatData.record.posts) || [];
-        console.log(`LOG: Successfully loaded ${posts.length} posts from chat board.`);
+        // Firestore REST format transformation
+        const posts = (chatData.documents || []).map(doc => {
+            const fields = doc.fields;
+            const data = {};
+            for (const [key, value] of Object.entries(fields)) {
+                // Handle different Firestore types (stringValue, booleanValue, arrayValue, etc.)
+                if (value.stringValue !== undefined) data[key] = value.stringValue;
+                else if (value.booleanValue !== undefined) data[key] = value.booleanValue;
+                else if (value.arrayValue !== undefined) {
+                    data[key] = (value.arrayValue.values || []).map(v => v.stringValue || v);
+                }
+                else if (value.timestampValue !== undefined) data[key] = value.timestampValue;
+            }
+            return { id: doc.name.split('/').pop(), ...data };
+        });
+        console.log(`LOG: Successfully loaded ${posts.length} posts from Firebase Firestore.`);
+
 
         // 2. Fetch Employee Emails
         console.log(`Step 2: Fetching Employee/Email data from bin: ${EMP_BIN_ID}`);
