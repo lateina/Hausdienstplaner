@@ -11,44 +11,45 @@ const SMTP_PASS = process.env.SMTP_PASS;
 const EMAIL_FROM = process.env.EMAIL_FROM || SMTP_USER;
 
 async function checkAndSendReminders() {
-    console.log("Starting Reminder Check (Gmail SMTP)...");
+    console.log("--- Starting Reminder Check (Gmail SMTP) ---");
 
     if (!JSONBIN_KEY || !SMTP_USER || !SMTP_PASS) {
-        console.error("Missing required environment variables (JSONBIN_KEY, SMTP_USER, or SMTP_PASS). Aborting.");
+        console.error("CRITICAL: Missing required environment variables (JSONBIN_KEY, SMTP_USER, or SMTP_PASS).");
         process.exit(1);
     }
 
     try {
         // 1. Fetch Chat Posts
-        console.log(`Fetching Chat data from bin: ${CHAT_BIN_ID}`);
+        console.log(`Step 1: Fetching Chat data from bin: ${CHAT_BIN_ID}`);
         const chatRes = await fetch(`https://api.jsonbin.io/v3/b/${CHAT_BIN_ID}/latest`, {
             headers: { 'X-Master-Key': JSONBIN_KEY }
         });
         const chatData = await chatRes.json();
 
         if (!chatRes.ok) {
-            console.error("Failed to fetch Chat data:", chatData);
+            console.error("ERROR: Failed to fetch Chat data:", chatData);
             throw new Error(`Chat API error: ${chatRes.status}`);
         }
 
         const posts = (chatData.record && chatData.record.posts) || [];
-        console.log(`Found ${posts.length} posts.`);
+        console.log(`LOG: Successfully loaded ${posts.length} posts from chat board.`);
 
         // 2. Fetch Employee Emails
-        console.log(`Fetching Employee data from bin: ${EMP_BIN_ID}`);
+        console.log(`Step 2: Fetching Employee/Email data from bin: ${EMP_BIN_ID}`);
         const empRes = await fetch(`https://api.jsonbin.io/v3/b/${EMP_BIN_ID}/latest`, {
             headers: { 'X-Master-Key': JSONBIN_KEY }
         });
         const empData = await empRes.json();
 
         if (!empRes.ok) {
-            console.error("Failed to fetch Employee data:", empData);
+            console.error("ERROR: Failed to fetch Employee email data:", empData);
             throw new Error(`Employee API error: ${empRes.status}`);
         }
 
         const employees = Array.isArray(empData.record) ? empData.record :
             (empData.record.employees || empData.record.mitarbeiter || Object.values(empData.record).find(val => Array.isArray(val)) || []);
-        console.log(`Loaded email data for employees.`);
+
+        console.log(`LOG: Employee email database contains ${employees.length} entries.`);
 
         // 3. Setup Nodemailer
         const transporter = nodemailer.createTransport({
@@ -63,6 +64,7 @@ async function checkAndSendReminders() {
 
         const now = new Date();
         now.setHours(0, 0, 0, 0);
+        console.log(`LOG: Reference date (Today): ${now.toLocaleDateString('de-DE')}`);
 
         let emailsSent = 0;
 
@@ -77,27 +79,43 @@ async function checkAndSendReminders() {
             const diffTime = targetDate.getTime() - now.getTime();
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-            // Remind 7 days before
+            // Remind exactly 7 days before
             if (diffDays === 7) {
+                console.log(`\n>>> Match Found! Post "${post.title}" is due in 7 days (${targetDate.toLocaleDateString('de-DE')})`);
+
                 let authorEmail = null;
                 const authorId = post.mitarbeiterId || post.authorId;
+                const authorName = post.authorName;
 
+                console.log(`DEBUG: Searching for email for Author: "${authorName}" (ID: ${authorId})`);
+
+                // 4a. Try Match by ID
                 if (authorId) {
-                    const emp = employees.find(e => String(e.id || e.mitarbeiter_id) === String(authorId));
-                    if (emp) authorEmail = emp.email || emp.mitarbeiter_email;
+                    const emp = employees.find(e => {
+                        const empId = e.id || e.mitarbeiter_id;
+                        return String(empId) === String(authorId);
+                    });
+                    if (emp) {
+                        authorEmail = emp.email || emp.mitarbeiter_email;
+                        if (authorEmail) console.log(`DEBUG: Found email by ID match: ${authorEmail}`);
+                    }
                 }
 
-                if (!authorEmail) {
+                // 4b. Fallback: Try Match by Name (Case-Insensitive)
+                if (!authorEmail && authorName) {
                     const emp = employees.find(e => {
-                        const ename = e.name || e.mitarbeiter_name;
-                        return ename && ename === post.authorName;
+                        const ename = (e.name || e.mitarbeiter_name || "").trim().toLowerCase();
+                        return ename === authorName.trim().toLowerCase();
                     });
-                    if (emp) authorEmail = emp.email || emp.mitarbeiter_email;
+                    if (emp) {
+                        authorEmail = emp.email || emp.mitarbeiter_email;
+                        if (authorEmail) console.log(`DEBUG: Found email by Name fallback match: ${authorEmail}`);
+                    }
                 }
 
                 if (authorEmail) {
                     const group = post.tags && post.tags[0] ? ` (${post.tags[0]})` : '';
-                    console.log(`Sending email via SMTP to ${authorEmail} for post ID ${post.id}`);
+                    console.log(`ACTION: Sending email to ${authorEmail}...`);
 
                     try {
                         await transporter.sendMail({
@@ -107,16 +125,21 @@ async function checkAndSendReminders() {
                             subject: `Erinnerung: Tauschgesuch für deinen Dienst am ${targetDate.toLocaleDateString('de-DE')} ist noch offen`,
                             text: `Hallo ${post.authorName},\n\ndein Dienst${group} am ${targetDate.toLocaleDateString('de-DE')} ist in genau 7 Tagen fällig, aber dein Tauschgesuch ("${post.title}") ist im Dienste-Chat aktuell noch offen / nicht als erledigt markiert.\n\nFalls du den Dienst inzwischen tauschen konntest, logge dich bitte kurz ins Message Board ein und markiere das Gesuch als "Erledigt".\n\nViele Grüße\nDein Dienste-Chat Bot`
                         });
+                        console.log(`SUCCESS: Email sent to ${authorEmail}`);
                         emailsSent++;
                     } catch (err) {
-                        console.error('Error sending email via SMTP:', err);
+                        console.error(`ERROR: Failed to send email to ${authorEmail}:`, err.message);
                     }
+                } else {
+                    console.warn(`WARNING: Could not find email address for "${authorName}" (ID: ${authorId}).`);
+                    // List first 3 employees for debugging
+                    console.log("DEBUG: Available employees in database (sample):", JSON.stringify(employees.slice(0, 3).map(e => ({ name: e.name || e.mitarbeiter_name, id: e.id || e.mitarbeiter_id })), null, 2));
                 }
             }
         }
-        console.log(`Reminder check completed. Sent ${emailsSent} emails.`);
+        console.log(`\n--- Completed. Total emails sent: ${emailsSent} ---`);
     } catch (e) {
-        console.error("Error during reminder check:", e);
+        console.error("CRITICAL ERROR during execution:", e);
         process.exit(1);
     }
 }
