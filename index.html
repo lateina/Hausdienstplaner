@@ -476,6 +476,91 @@
         input:checked+.slider:before {
             transform: translateX(20px);
         }
+
+        /* iOS Install Prompt */
+        .ios-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(150px);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 16px 20px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            z-index: 10000;
+            width: 90%;
+            max-width: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .ios-prompt.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .ios-prompt-content {
+            flex-grow: 1;
+            padding-right: 15px;
+        }
+
+        .ios-prompt-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+            color: var(--text-main);
+        }
+
+        .ios-prompt-text {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .ios-share-icon {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="%2364748b" d="M398.1 233.2c0-1.2.2-2.4.2-3.6 0-65-51.8-117.6-115.7-117.6-46.1 0-85.7 27.4-104.3 67-8.1-4.1-17.2-6.5-26.8-6.5-29.5 0-54.1 21.9-58.8 50.5C57.3 235.2 32 269.1 32 309.1c0 50.2 40.7 90.9 90.9 90.9h262.2c48 0 86.9-38.9 86.9-86.9 0-41.1-28.8-75.5-68.9-84.9h-5zM276.4 148v160.7h-40.8V148h-63.5l83.9-97.1 83.9 97.1h-63.5z"/></svg>') no-repeat center;
+            vertical-align: middle;
+            margin: 0 4px;
+        }
+
+        .ios-prompt-close {
+            background: #f1f5f9;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #64748b;
+            font-size: 18px;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .ios-prompt-close:active {
+            background: #e2e8f0;
+        }
+
+        .ios-prompt-arrow {
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid rgba(255, 255, 255, 0.95);
+        }
     </style>
 </head>
 
@@ -659,6 +744,19 @@
                 <button class="btn-primary" style="width: auto;" onclick="submitReply()">Antworten</button>
             </div>
         </div>
+    </div>
+
+    <!-- iOS Install Prompt -->
+    <div id="ios-prompt" class="ios-prompt">
+        <div class="ios-prompt-content">
+            <div class="ios-prompt-title">App installieren 🚀</div>
+            <div class="ios-prompt-text">
+                Tippe auf Teilen <span class="ios-share-icon"></span> und wähle<br>
+                <strong>„Zum Home-Bildschirm“</strong>
+            </div>
+        </div>
+        <button class="ios-prompt-close" onclick="dismissIosPrompt()">✕</button>
+        <div class="ios-prompt-arrow"></div>
     </div>
 
     <script>
@@ -1611,6 +1709,42 @@
                 refreshContent();
             }
         }, 60000);
+
+        // --- iOS Install Prompt Logic ---
+        function checkIosPrompt() {
+            // Detect iOS devices (iPhone, iPad, iPod)
+            const isIos = () => {
+                const userAgent = window.navigator.userAgent.toLowerCase();
+                return /iphone|ipad|ipod/.test(userAgent);
+            };
+
+            // Detect if the app is already running in standalone mode (from the homescreen)
+            const isInStandaloneMode = () => {
+                return ('standalone' in window.navigator) && (window.navigator.standalone) ||
+                    window.matchMedia('(display-mode: standalone)').matches;
+            };
+
+            // Check if user has already dismissed the prompt
+            const promptDismissed = localStorage.getItem('hc-ios-prompt-dismissed') === 'true';
+
+            if (isIos() && !isInStandaloneMode() && !promptDismissed) {
+                // Show prompt after a short delay so it feels natural
+                setTimeout(() => {
+                    document.getElementById('ios-prompt').classList.add('show');
+                }, 2000);
+            }
+        }
+
+        function dismissIosPrompt() {
+            document.getElementById('ios-prompt').classList.remove('show');
+            // Remember dismissal for 14 days
+            localStorage.setItem('hc-ios-prompt-dismissed', 'true');
+            // Optional: You could use a timestamp here to show it again after X days
+        }
+
+        // Run check on load
+        window.addEventListener('load', checkIosPrompt);
+
     </script>
 </body>
 
