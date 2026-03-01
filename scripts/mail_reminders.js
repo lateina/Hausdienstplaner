@@ -4,6 +4,7 @@ const JSONBIN_KEY = process.env.JSONBIN_KEY;
 const CHAT_BIN_ID = process.env.CHAT_BIN_ID;
 const EMP_BIN_ID = process.env.EMP_BIN_ID;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const RESEND_FROM = process.env.RESEND_FROM || 'Hausdienst-Bot <onboarding@resend.dev>';
 
 async function checkAndSendReminders() {
     console.log("Starting Reminder Check...");
@@ -78,7 +79,7 @@ async function checkAndSendReminders() {
 
                     try {
                         const data = await resend.emails.send({
-                            from: 'Hausdienst-Bot <onboarding@resend.dev>',
+                            from: RESEND_FROM,
                             to: authorEmail,
                             subject: `Erinnerung: Tauschgesuch für deinen Dienst am ${targetDate.toLocaleDateString('de-DE')} ist noch offen`,
                             text: `Hallo ${post.authorName},\n\ndein Dienst${group} am ${targetDate.toLocaleDateString('de-DE')} ist in genau 7 Tagen fällig, aber dein Tauschgesuch ("${post.title}") ist im Dienste-Chat aktuell noch offen / nicht als erledigt markiert.\n\nFalls du den Dienst inzwischen tauschen konntest, logge dich bitte kurz ins Message Board ein und markiere das Gesuch als "Erledigt".\n\nViele Grüße\nDein Dienste-Chat Bot`
