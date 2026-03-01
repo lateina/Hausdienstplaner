@@ -1066,7 +1066,7 @@
             const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
             const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator.standalone) ||
                 window.matchMedia('(display-mode: standalone)').matches;
-            if (isIos && !isInStandaloneMode() && !localStorage.getItem('hc-ios-prompt-dismissed')) {
+            if (isIos && !isInStandaloneMode && !localStorage.getItem('hc-ios-prompt-dismissed')) {
                 setTimeout(() => { const el = document.getElementById('ios-prompt'); if (el) el.classList.add('show'); }, 2000);
             }
         }
@@ -1507,7 +1507,7 @@
             checkIosPrompt();
             checkInstalledPrompt();
 
-            // Auto-refresh groups
+            // Auto-refresh groups - Updated: 2026-03-01 22:40
             setInterval(() => { if (currentUser) { loadGroups('hausdienst', CONFIG.DISTRIBUTION_BIN); loadGroups('visits', CONFIG.VISITS_BIN); } }, 300000);
         });
     </script>
