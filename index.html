@@ -928,7 +928,7 @@
                 let oberaerzteList = extractEmployees(dataOberaerzte.record);
 
                 // Include specific Oberärzte for the Kardio/Echo background
-                const allowedOberaerzte = ['sag', 'grewe', 'jungbauer', 'tafelmeier', 'tarnowski', 'wester'];
+                const allowedOberaerzte = ['sag', 'grewe', 'jungbauer', 'tafelmeier', 'tarnowski', 'wester', 'wagner'];
                 oberaerzteList = oberaerzteList.filter(e => {
                     const name = (e.name || e.mitarbeiter_name || "").toLowerCase();
                     return allowedOberaerzte.some(allowed => name.includes(allowed));
