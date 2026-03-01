@@ -1167,6 +1167,16 @@
                 card.className = 'post-card';
                 card.id = `post-${post.id}`;
 
+                const groupLabel = post.tags && post.tags[0];
+                if (groupLabel) {
+                    if (groupLabel.includes('1. Hausdienst')) card.style.backgroundColor = '#ebf8ff'; // Sehr blasses Blau
+                    else if (groupLabel.includes('2. Hausdienst')) card.style.backgroundColor = '#e6fffa'; // Sehr blasses Türkis/Grün
+                    else if (groupLabel.includes('3. Hausdienst')) card.style.backgroundColor = '#faf5ff'; // Sehr blasses Lila
+                    else if (groupLabel.includes('Echo')) card.style.backgroundColor = '#fffff0'; // Sehr blasses Gelb
+                    else if (groupLabel.includes('Broncho')) card.style.backgroundColor = '#fff5f5'; // Sehr blasses Rot
+                    else if (groupLabel.includes('Station')) card.style.backgroundColor = '#f8fafc'; // Sehr blasses Grau
+                }
+
                 const repliesHtml = (post.replies || []).map(reply => `
                     <div style="margin-top: 0.8rem; padding-left: 1rem; border-left: 2px solid #e2e8f0; font-size: 0.85rem;">
                         <span style="font-weight: 600;">${reply.authorName}:</span> ${reply.body}
