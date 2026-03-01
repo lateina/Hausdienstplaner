@@ -975,7 +975,9 @@
                 item.className = 'dropdown-item';
                 item.textContent = name;
                 item.dataset.id = emp.id || emp.mitarbeiter_id;
-                item.onclick = function () {
+                // Use mousedown instead of click so it fires before the input's blur event on mobile
+                item.onmousedown = function (e) {
+                    e.preventDefault(); // Prevent input from losing focus immediately
                     document.getElementById('name-search').value = name;
                     document.getElementById('name-select-value').value = item.dataset.id;
                     dropdown.style.display = 'none';
@@ -1038,9 +1040,22 @@
         }
 
         function handleLogin() {
-            const id = document.getElementById('name-select-value').value;
+            let id = document.getElementById('name-select-value').value;
+            const searchValue = (document.getElementById('name-search').value || "").trim().toLowerCase();
             const pin = document.getElementById('pin-input').value;
             const error = document.getElementById('login-error');
+
+            if (!id && searchValue) {
+                // Try to find the user by typed name if they didn't click the dropdown
+                const matchedUser = employees.find(e => {
+                    const n = (e.name || e.mitarbeiter_name || "").toLowerCase();
+                    return n === searchValue || n.includes(searchValue);
+                });
+                if (matchedUser) {
+                    id = matchedUser.id || matchedUser.mitarbeiter_id;
+                    document.getElementById('name-select-value').value = id;
+                }
+            }
 
             if (!id) {
                 error.textContent = 'Bitte wählen Sie zuerst einen Namen aus der Liste.';
