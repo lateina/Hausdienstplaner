@@ -108,6 +108,10 @@
             font-family: inherit;
             font-size: 1rem;
             transition: all 0.2s;
+            /* Browser-native Dropdowns lassen sich via CSS kaum bändigen.
+               Aber wir stellen sicher, dass das Element im Flow bleibt */
+            height: auto;
+            min-height: 48px;
         }
 
         select:focus,
