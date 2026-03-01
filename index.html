@@ -854,6 +854,75 @@
             visits: { months: [], currentMonth: null, distributions: {} }
         };
 
+        // --- Core UI Functions (Moved up to ensure availability) ---
+        function renderGroupTabs(type, activeId) {
+            console.log("Dienste-Chat: renderGroupTabs", type, activeId);
+            const container = document.getElementById(`${type}-tabs`);
+            if (!container) return;
+            container.innerHTML = '';
+            groupsState[type].months.forEach(month => {
+                const tab = document.createElement('div');
+                const isActive = activeId && month.monat_id === activeId;
+                tab.className = `month-tab ${isActive ? 'active' : ''}`;
+                tab.textContent = month.name || month.monat_id;
+                tab.onclick = () => {
+                    renderGroupTabs(type, month.monat_id);
+                    selectCategoryMonth(type, month.monat_id);
+                };
+                container.appendChild(tab);
+            });
+        }
+
+        function selectCategoryMonth(type, monthId) {
+            console.log("Dienste-Chat: selectCategoryMonth", type, monthId);
+            const month = groupsState[type].months.find(m => m.monat_id === monthId);
+            if (month) {
+                groupsState[type].distributions = month.assignments || {};
+                const statusEl = document.getElementById(`${type}-status`);
+                if (statusEl) statusEl.textContent = `Planung für ${month.name || month.monat_id}`;
+                renderCategoryGroups(type);
+                populateGroupSelect();
+            }
+        }
+
+        function renderCategoryGroups(type) {
+            console.log("Dienste-Chat: renderCategoryGroups", type);
+            const container = document.getElementById(`${type}-container`);
+            if (!container) return;
+            container.innerHTML = '';
+            const labels = {
+                'visite_46': 'Station 46', 'visite_18': 'Station 18', 'visite_19': 'Station 19',
+                '1. Hausdienst': '1. Hausdienst', '2. Hausdienst': '2. Hausdienst', '3. Hausdienst': '3. Hausdienst',
+                'Echo-Hintergrund': 'Echo-Hintergrund', 'Broncho-Hintergrund': 'Broncho-Hintergrund', 'Kardio-Hintergrund': 'Kardio-Hintergrund',
+                'pool': 'Pool / Springer', 'excluded': 'Abwesend / Elternzeit'
+            };
+            Object.entries(groupsState[type].distributions).forEach(([key, list]) => {
+                const groupName = labels[key] || key;
+                const card = document.createElement('div');
+                card.className = 'group-card';
+                const employeesList = Array.isArray(list) ? list : (list ? [list] : []);
+                card.innerHTML = `
+                    <div class="group-name">${groupName}</div>
+                    <ul class="emp-list">
+                        ${employeesList.map(emp => `
+                            <li class="emp-item">${(typeof emp === 'object' ? (emp.name || emp.mitarbeiter_name) : emp)}</li>
+                        `).join('') || '<li style="color: #ccc; font-style: italic;">Keine Zuordnung</li>'}
+                    </ul>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function requestNotificationPermission() {
+            console.log("Dienste-Chat: requestNotificationPermission");
+            if (!('Notification' in window)) return;
+            if (Notification.permission === 'default') {
+                document.getElementById('btn-notifications').style.display = 'block';
+            } else {
+                document.getElementById('btn-notifications').style.display = 'none';
+            }
+        }
+
         // --- Helper Functions ---
         function isCurrentUserAdmin() {
             if (!currentUser) return false;
@@ -929,6 +998,105 @@
                 console.error("Error loading employees", e);
                 showStatus(`Fehler: ${e.message}`, true);
             }
+        }
+
+        function isUserInDienstGroup(groupLabel, targetDate) {
+            console.log("Dienste-Chat: isUserInDienstGroup", groupLabel, targetDate);
+            if (!currentUser || isCurrentUserAdmin() || !groupLabel) return true;
+            const currentName = (currentUser.name || currentUser.mitarbeiter_name || "").toLowerCase();
+
+            for (const type of ['hausdienst', 'visits']) {
+                const state = groupsState[type];
+                let distributions = state.distributions;
+                if (targetDate) {
+                    const dateObj = new Date(targetDate);
+                    const monatId = `month_${dateObj.getFullYear()}_${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+                    const month = state.months.find(m => m.monat_id === monatId);
+                    if (month && (month.distributions || month.assignments)) distributions = month.distributions || month.assignments;
+                }
+                const reverseLabels = { 'Station 46': 'visite_46', 'Station 18': 'visite_18', 'Station 19': 'visite_19' };
+                const searchKey = reverseLabels[groupLabel] || groupLabel;
+                const assigned = distributions[searchKey] || distributions['pool'] || [];
+                const names = Array.isArray(assigned) ? assigned : [assigned];
+                if (names.some(n => {
+                    const nName = (typeof n === 'object' ? (n.name || n.mitarbeiter_name) : n || "").toLowerCase();
+                    return nName.includes(currentName) || currentName.includes(nName);
+                })) return true;
+            }
+            return false;
+        }
+
+        function populateGroupSelect() {
+            console.log("Dienste-Chat: populateGroupSelect");
+            const select = document.getElementById('post-group-tag');
+            if (!select) return;
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">Keine Auswahl</option>';
+            const labels = { 'visite_46': 'Station 46', 'visite_18': 'Station 18', 'visite_19': 'Station 19', '1. Hausdienst': '1. Hausdienst', '2. Hausdienst': '2. Hausdienst', '3. Hausdienst': '3. Hausdienst', 'Echo-Hintergrund': 'Echo-Hintergrund', 'Broncho-Hintergrund': 'Broncho-Hintergrund', 'Kardio-Hintergrund': 'Kardio-Hintergrund' };
+            const addGroup = (categoryLabel, dists) => {
+                const group = document.createElement('optgroup');
+                group.label = categoryLabel;
+                Object.keys(dists).forEach(key => {
+                    if (['pool', 'excluded'].includes(key)) return;
+                    const opt = document.createElement('option');
+                    opt.value = labels[key] || key;
+                    opt.textContent = labels[key] || key;
+                    group.appendChild(opt);
+                });
+                if (group.children.length > 0) select.appendChild(group);
+            };
+            addGroup('Hausdienst', groupsState.hausdienst.distributions);
+            addGroup('Visiten', groupsState.visits.distributions);
+            select.value = currentValue;
+        }
+
+        async function requestNotificationPermissionUI() {
+            console.log("Dienste-Chat: requestNotificationPermissionUI");
+            if ('Notification' in window) {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    const btn = document.getElementById('btn-notifications');
+                    if (btn) btn.style.display = 'none';
+                    alert('Benachrichtigungen aktiviert!');
+                }
+            }
+        }
+
+        function checkIosPrompt() {
+            const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+            const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator.standalone) ||
+                window.matchMedia('(display-mode: standalone)').matches;
+            if (isIos && !isInStandaloneMode() && !localStorage.getItem('hc-ios-prompt-dismissed')) {
+                setTimeout(() => { const el = document.getElementById('ios-prompt'); if (el) el.classList.add('show'); }, 2000);
+            }
+        }
+
+        function checkInstalledPrompt() {
+            const isStandalone = ('standalone' in window.navigator) && (window.navigator.standalone) ||
+                window.matchMedia('(display-mode: standalone)').matches;
+            if (isStandalone) {
+                localStorage.setItem('hc-pwa-installed', 'true');
+            } else if (localStorage.getItem('hc-pwa-installed') === 'true' && !localStorage.getItem('hc-installed-prompt-dismissed')) {
+                setTimeout(() => { const el = document.getElementById('installed-prompt'); if (el) el.classList.add('show'); }, 1500);
+            }
+        }
+
+        function checkUpcomingReminders() {
+            console.log("Dienste-Chat: checkUpcomingReminders");
+            if (!('Notification' in window) || Notification.permission !== 'granted' || !currentUser) return;
+            posts.forEach(post => {
+                if (String(post.mitarbeiterId || post.authorId) !== String(currentUser.id || currentUser.mitarbeiter_id)) return;
+                if (post.isDone || !post.targetDate) return;
+                const todayStr = new Date().toISOString().split('T')[0];
+                const reminderKey = `hc-reminder-${post.id}-${todayStr}`;
+                if (localStorage.getItem(reminderKey)) return;
+                const targetDate = new Date(post.targetDate);
+                const diff = (targetDate - new Date()) / (1000 * 60 * 60 * 24);
+                if (diff >= 0 && diff <= 3) {
+                    new Notification("Erinnerung: Tausch offen!", { body: `Dein Dienst am ${targetDate.toLocaleDateString('de-DE')} ist noch offen.` });
+                    localStorage.setItem(reminderKey, 'true');
+                }
+            });
         }
 
         function renderNameSelect() {
@@ -1284,228 +1452,159 @@
             const dateRangeStr = dateParts.length === 2 ? `${dateParts[0]} - ${dateParts[1]}` : (dateParts[0] || '');
 
             const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
-            const subject = encodeURIComponent(`${getDienstTyp(groupName)}-Tausch ${dateRangeStr}`);
-            const body = encodeURIComponent(`Hallo,\nich suche einen Tauschpartner für ${dateRangeStr}.\nDetails: ${shareUrl}`);
-            window.location.href = `mailto:?subject=${subject}&body=${body}`;
-        }
+            // --- Group Logic ---
+            function isUserInDienstGroup(groupLabel, targetDate) {
+                if (!currentUser || isCurrentUserAdmin() || !groupLabel) return true; // Show all if admin or no label
+                const currentName = (currentUser.name || currentUser.mitarbeiter_name || "").toLowerCase();
 
-        // --- Group Logic ---
-        function isUserInDienstGroup(groupLabel, targetDate) {
-            if (!currentUser || isCurrentUserAdmin() || !groupLabel) return true; // Show all if admin or no label
-            const currentName = (currentUser.name || currentUser.mitarbeiter_name || "").toLowerCase();
+                for (const type of ['hausdienst', 'visits']) {
+                    const state = groupsState[type];
+                    let distributions = state.distributions;
+                    if (targetDate) {
+                        const dateObj = new Date(targetDate);
+                        const monatId = `month_${dateObj.getFullYear()}_${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+                        const month = state.months.find(m => m.monat_id === monatId);
+                        if (month && (month.distributions || month.assignments)) distributions = month.distributions || month.assignments;
+                    }
 
-            for (const type of ['hausdienst', 'visits']) {
-                const state = groupsState[type];
-                let distributions = state.distributions;
-                if (targetDate) {
-                    const dateObj = new Date(targetDate);
-                    const monatId = `month_${dateObj.getFullYear()}_${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
-                    const month = state.months.find(m => m.monat_id === monatId);
-                    if (month && (month.distributions || month.assignments)) distributions = month.distributions || month.assignments;
+                    const reverseLabels = { 'Station 46': 'visite_46', 'Station 18': 'visite_18', 'Station 19': 'visite_19' };
+                    const searchKey = reverseLabels[groupLabel] || groupLabel;
+                    const assigned = distributions[searchKey] || distributions['pool'] || [];
+                    const names = Array.isArray(assigned) ? assigned : [assigned];
+
+                    if (names.some(n => {
+                        const nName = (typeof n === 'object' ? (n.name || n.mitarbeiter_name) : n || "").toLowerCase();
+                        return nName.includes(currentName) || currentName.includes(nName);
+                    })) return true;
                 }
-
-                const reverseLabels = { 'Station 46': 'visite_46', 'Station 18': 'visite_18', 'Station 19': 'visite_19' };
-                const searchKey = reverseLabels[groupLabel] || groupLabel;
-                const assigned = distributions[searchKey] || distributions['pool'] || [];
-                const names = Array.isArray(assigned) ? assigned : [assigned];
-
-                if (names.some(n => {
-                    const nName = (typeof n === 'object' ? (n.name || n.mitarbeiter_name) : n || "").toLowerCase();
-                    return nName.includes(currentName) || currentName.includes(nName);
-                })) return true;
+                return false;
             }
-            return false;
-        }
 
-        function populateGroupSelect() {
-            const select = document.getElementById('post-group-tag');
-            if (!select) return;
-            const currentValue = select.value;
-            select.innerHTML = '<option value="">Keine Auswahl</option>';
-            const labels = { 'visite_46': 'Station 46', 'visite_18': 'Station 18', 'visite_19': 'Station 19', '1. Hausdienst': '1. Hausdienst', '2. Hausdienst': '2. Hausdienst', '3. Hausdienst': '3. Hausdienst', 'Echo-Hintergrund': 'Echo-Hintergrund', 'Broncho-Hintergrund': 'Broncho-Hintergrund', 'Kardio-Hintergrund': 'Kardio-Hintergrund' };
+            function populateGroupSelect() {
+                const select = document.getElementById('post-group-tag');
+                if (!select) return;
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">Keine Auswahl</option>';
+                const labels = { 'visite_46': 'Station 46', 'visite_18': 'Station 18', 'visite_19': 'Station 19', '1. Hausdienst': '1. Hausdienst', '2. Hausdienst': '2. Hausdienst', '3. Hausdienst': '3. Hausdienst', 'Echo-Hintergrund': 'Echo-Hintergrund', 'Broncho-Hintergrund': 'Broncho-Hintergrund', 'Kardio-Hintergrund': 'Kardio-Hintergrund' };
 
-            const addGroup = (categoryLabel, dists) => {
-                const group = document.createElement('optgroup');
-                group.label = categoryLabel;
-                Object.keys(dists).forEach(key => {
-                    if (['pool', 'excluded'].includes(key)) return;
-                    const opt = document.createElement('option');
-                    opt.value = labels[key] || key;
-                    opt.textContent = labels[key] || key;
-                    group.appendChild(opt);
-                });
-                if (group.children.length > 0) select.appendChild(group);
-            };
-            addGroup('Hausdienst', groupsState.hausdienst.distributions);
-            addGroup('Visiten', groupsState.visits.distributions);
-            select.value = currentValue;
-        }
-
-        function renderGroupTabs(type, activeId) {
-            const container = document.getElementById(`${type}-tabs`);
-            if (!container) return;
-            container.innerHTML = '';
-            groupsState[type].months.forEach(month => {
-                const tab = document.createElement('div');
-                const isActive = activeId && month.monat_id === activeId;
-                tab.className = `month-tab ${isActive ? 'active' : ''}`;
-                tab.textContent = month.name || month.monat_id;
-                tab.onclick = () => {
-                    renderGroupTabs(type, month.monat_id);
-                    selectCategoryMonth(type, month.monat_id);
+                const addGroup = (categoryLabel, dists) => {
+                    const group = document.createElement('optgroup');
+                    group.label = categoryLabel;
+                    Object.keys(dists).forEach(key => {
+                        if (['pool', 'excluded'].includes(key)) return;
+                        const opt = document.createElement('option');
+                        opt.value = labels[key] || key;
+                        opt.textContent = labels[key] || key;
+                        group.appendChild(opt);
+                    });
+                    if (group.children.length > 0) select.appendChild(group);
                 };
-                container.appendChild(tab);
-            });
-        }
-
-        function selectCategoryMonth(type, monthId) {
-            const month = groupsState[type].months.find(m => m.monat_id === monthId);
-            if (month) {
-                groupsState[type].distributions = month.assignments || {};
-                const statusEl = document.getElementById(`${type}-status`);
-                if (statusEl) statusEl.textContent = `Planung für ${month.name || month.monat_id}`;
-                renderCategoryGroups(type);
-                populateGroupSelect();
+                addGroup('Hausdienst', groupsState.hausdienst.distributions);
+                addGroup('Visiten', groupsState.visits.distributions);
+                select.value = currentValue;
             }
-        }
 
-        function renderCategoryGroups(type) {
-            const container = document.getElementById(`${type}-container`);
-            if (!container) return;
-            container.innerHTML = '';
-            const labels = {
-                'visite_46': 'Station 46', 'visite_18': 'Station 18', 'visite_19': 'Station 19',
-                '1. Hausdienst': '1. Hausdienst', '2. Hausdienst': '2. Hausdienst', '3. Hausdienst': '3. Hausdienst',
-                'Echo-Hintergrund': 'Echo-Hintergrund', 'Broncho-Hintergrund': 'Broncho-Hintergrund', 'Kardio-Hintergrund': 'Kardio-Hintergrund',
-                'pool': 'Pool / Springer', 'excluded': 'Abwesend / Elternzeit'
-            };
-            Object.entries(groupsState[type].distributions).forEach(([key, list]) => {
-                const groupName = labels[key] || key;
-                const card = document.createElement('div');
-                card.className = 'group-card';
-                const employeesList = Array.isArray(list) ? list : (list ? [list] : []);
-                card.innerHTML = `
-                    <div class="group-name">${groupName}</div>
-                    <ul class="emp-list">
-                        ${employeesList.map(emp => `
-                            <li class="emp-item">${(typeof emp === 'object' ? (emp.name || emp.mitarbeiter_name) : emp)}</li>
-                        `).join('') || '<li style="color: #ccc; font-style: italic;">Keine Zuordnung</li>'}
-                    </ul>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function requestNotificationPermission() {
-            if (!('Notification' in window)) return;
-            if (Notification.permission === 'default') {
-                document.getElementById('btn-notifications').style.display = 'block';
-            } else {
-                document.getElementById('btn-notifications').style.display = 'none';
-            }
-        }
-
-        async function requestNotificationPermissionUI() {
-            if ('Notification' in window) {
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    document.getElementById('btn-notifications').style.display = 'none';
-                    alert('Benachrichtigungen aktiviert!');
+            async function requestNotificationPermissionUI() {
+                if ('Notification' in window) {
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        document.getElementById('btn-notifications').style.display = 'none';
+                        alert('Benachrichtigungen aktiviert!');
+                    }
                 }
             }
-        }
 
-        function checkIosPrompt() {
-            const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
-            const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator.standalone) ||
-                window.matchMedia('(display-mode: standalone)').matches;
-            if (isIos() && !isInStandaloneMode() && !localStorage.getItem('hc-ios-prompt-dismissed')) {
-                setTimeout(() => { document.getElementById('ios-prompt').classList.add('show'); }, 2000);
-            }
-        }
-
-        function checkInstalledPrompt() {
-            const isStandalone = ('standalone' in window.navigator) && (window.navigator.standalone) ||
-                window.matchMedia('(display-mode: standalone)').matches;
-            if (isStandalone()) {
-                localStorage.setItem('hc-pwa-installed', 'true');
-            } else if (localStorage.getItem('hc-pwa-installed') === 'true' && !localStorage.getItem('hc-installed-prompt-dismissed')) {
-                setTimeout(() => { document.getElementById('installed-prompt').classList.add('show'); }, 1500);
-            }
-        }
-
-        // --- Reminders ---
-        function checkUpcomingReminders() {
-            if (!('Notification' in window) || Notification.permission !== 'granted' || !currentUser) return;
-            posts.forEach(post => {
-                if (String(post.mitarbeiterId || post.authorId) !== String(currentUser.id || currentUser.mitarbeiter_id)) return;
-                if (post.isDone || !post.targetDate) return;
-                const todayStr = new Date().toISOString().split('T')[0];
-                const reminderKey = `hc-reminder-${post.id}-${todayStr}`;
-                if (localStorage.getItem(reminderKey)) return;
-
-                const targetDate = new Date(post.targetDate);
-                const diffDays = Math.ceil((targetDate - new Date()) / (1000 * 60 * 60 * 24));
-                if (diffDays > 0 && diffDays <= 7) {
-                    new Notification("Erinnerung: Tausch offen!", { body: `Dein Dienst am ${targetDate.toLocaleDateString('de-DE')} ist noch offen.` });
-                    localStorage.setItem(reminderKey, 'true');
+            function checkIosPrompt() {
+                const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+                const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator.standalone) ||
+                    window.matchMedia('(display-mode: standalone)').matches;
+                if (isIos() && !isInStandaloneMode() && !localStorage.getItem('hc-ios-prompt-dismissed')) {
+                    setTimeout(() => { document.getElementById('ios-prompt').classList.add('show'); }, 2000);
                 }
-            });
-        }
+            }
 
-        // --- UI Bridge ---
-        window.handleLogin = handleLogin;
-        window.saveSetup = saveSetup;
-        window.hideSetup = hideSetup;
-        window.showSetup = showSetup;
-        window.handleLogout = () => { currentUser = null; localStorage.removeItem('hc-user'); document.getElementById('main-app').style.display = 'none'; document.getElementById('login-screen').style.display = 'flex'; };
-        window.showTab = (tab) => { document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active')); event.target.classList.add('active'); if (document.getElementById(`${tab}-section`)) document.getElementById(`${tab}-section`).classList.add('active'); };
-        window.openModal = (id) => { document.getElementById(`modal-${id}`).style.display = 'flex'; };
-        window.closeModal = () => { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); };
-        window.openReplyModal = (postId) => { window.currentReplyPostId = postId; window.openModal('reply'); };
-        window.submitPost = submitPost;
-        window.submitReply = submitReply;
-        window.deletePost = deletePost;
-        window.togglePostDone = togglePostDone;
-        window.sharePost = sharePost;
-        window.shareByEmail = shareByEmail;
-        window.requestNotificationPermissionUI = () => { Notification.requestPermission(); };
-        window.dismissIosPrompt = () => { document.getElementById('ios-prompt').classList.remove('show'); localStorage.setItem('hc-ios-prompt-dismissed', 'true'); };
-        window.dismissInstalledPrompt = () => { document.getElementById('installed-prompt').classList.remove('show'); localStorage.setItem('hc-installed-prompt-dismissed', 'true'); };
+            function checkInstalledPrompt() {
+                const isStandalone = ('standalone' in window.navigator) && (window.navigator.standalone) ||
+                    window.matchMedia('(display-mode: standalone)').matches;
+                if (isStandalone()) {
+                    localStorage.setItem('hc-pwa-installed', 'true');
+                } else if (localStorage.getItem('hc-pwa-installed') === 'true' && !localStorage.getItem('hc-installed-prompt-dismissed')) {
+                    setTimeout(() => { document.getElementById('installed-prompt').classList.add('show'); }, 1500);
+                }
+            }
 
-        // --- SW Registration ---
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').then(reg => {
-                    setInterval(() => reg.update(), 300000);
+            // --- Reminders ---
+            function checkUpcomingReminders() {
+                if (!('Notification' in window) || Notification.permission !== 'granted' || !currentUser) return;
+                posts.forEach(post => {
+                    if (String(post.mitarbeiterId || post.authorId) !== String(currentUser.id || currentUser.mitarbeiter_id)) return;
+                    if (post.isDone || !post.targetDate) return;
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const reminderKey = `hc-reminder-${post.id}-${todayStr}`;
+                    if (localStorage.getItem(reminderKey)) return;
+
+                    const targetDate = new Date(post.targetDate);
+                    const diffDays = Math.ceil((targetDate - new Date()) / (1000 * 60 * 60 * 24));
+                    if (diffDays > 0 && diffDays <= 7) {
+                        new Notification("Erinnerung: Tausch offen!", { body: `Dein Dienst am ${targetDate.toLocaleDateString('de-DE')} ist noch offen.` });
+                        localStorage.setItem(reminderKey, 'true');
+                    }
                 });
-                let refreshing = false;
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    if (!refreshing) { refreshing = true; window.location.reload(); }
-                });
-            });
-        }
+            }
 
-        // --- Init triggers ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const searchInput = document.getElementById('name-search');
-            const dropdown = document.getElementById('name-dropdown');
-            if (searchInput && dropdown) {
-                searchInput.addEventListener('focus', () => dropdown.style.display = 'block');
-                searchInput.addEventListener('input', (e) => {
-                    const term = e.target.value.toLowerCase();
-                    dropdown.querySelectorAll('.dropdown-item').forEach(item => {
-                        item.style.display = item.textContent.toLowerCase().includes(term) ? 'block' : 'none';
+            // --- UI Bridge ---
+            window.handleLogin = handleLogin;
+            window.saveSetup = saveSetup;
+            window.hideSetup = hideSetup;
+            window.showSetup = showSetup;
+            window.handleLogout = () => { currentUser = null; localStorage.removeItem('hc-user'); document.getElementById('main-app').style.display = 'none'; document.getElementById('login-screen').style.display = 'flex'; };
+            window.showTab = (tab) => { document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active')); event.target.classList.add('active'); if (document.getElementById(`${tab}-section`)) document.getElementById(`${tab}-section`).classList.add('active'); };
+            window.openModal = (id) => { document.getElementById(`modal-${id}`).style.display = 'flex'; };
+            window.closeModal = () => { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); };
+            window.openReplyModal = (postId) => { window.currentReplyPostId = postId; window.openModal('reply'); };
+            window.submitPost = submitPost;
+            window.submitReply = submitReply;
+            window.deletePost = deletePost;
+            window.togglePostDone = togglePostDone;
+            window.sharePost = sharePost;
+            window.shareByEmail = shareByEmail;
+            window.requestNotificationPermissionUI = () => { Notification.requestPermission(); };
+            window.dismissIosPrompt = () => { document.getElementById('ios-prompt').classList.remove('show'); localStorage.setItem('hc-ios-prompt-dismissed', 'true'); };
+            window.dismissInstalledPrompt = () => { document.getElementById('installed-prompt').classList.remove('show'); localStorage.setItem('hc-installed-prompt-dismissed', 'true'); };
+
+            // --- SW Registration ---
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('./sw.js').then(reg => {
+                        setInterval(() => reg.update(), 300000);
+                    });
+                    let refreshing = false;
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        if (!refreshing) { refreshing = true; window.location.reload(); }
                     });
                 });
             }
-            init();
-            checkIosPrompt();
-            checkInstalledPrompt();
 
-            // Auto-refresh groups
-            setInterval(() => { if (currentUser) { loadGroups('hausdienst', CONFIG.DISTRIBUTION_BIN); loadGroups('visits', CONFIG.VISITS_BIN); } }, 300000);
-        });
+            // --- Init triggers ---
+            document.addEventListener('DOMContentLoaded', () => {
+                const searchInput = document.getElementById('name-search');
+                const dropdown = document.getElementById('name-dropdown');
+                if (searchInput && dropdown) {
+                    searchInput.addEventListener('focus', () => dropdown.style.display = 'block');
+                    searchInput.addEventListener('input', (e) => {
+                        const term = e.target.value.toLowerCase();
+                        dropdown.querySelectorAll('.dropdown-item').forEach(item => {
+                            item.style.display = item.textContent.toLowerCase().includes(term) ? 'block' : 'none';
+                        });
+                    });
+                }
+                init();
+                checkIosPrompt();
+                checkInstalledPrompt();
+
+                // Auto-refresh groups
+                setInterval(() => { if (currentUser) { loadGroups('hausdienst', CONFIG.DISTRIBUTION_BIN); loadGroups('visits', CONFIG.VISITS_BIN); } }, 300000);
+            });
     </script>
 </body>
 
