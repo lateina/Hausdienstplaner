@@ -1,7 +1,7 @@
 {
   "name": "Dienste-Chat Med II",
   "short_name": "Dienste-Chat",
-  "description": "Nachrichtenboard für Ärztete zur Koordination von Diensten.",
+  "description": "Nachrichtenboard für Ärztete zur Koordination von Diensten. Ein Projekt von Stefan Wagner.",
   "start_url": "./index.html",
   "scope": ".",
   "display": "standalone",
