@@ -1,0 +1,36 @@
+name: Send Daily Reminders
+
+on:
+  schedule:
+    # Runs at 08:00 UTC (09:00 or 10:00 CET) every day
+    - cron: '0 8 * * *'
+  # Allows manual triggering from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: cd scripts && npm install nodemailer node-fetch
+        
+      - name: Run reminder script
+        env:
+          JSONBIN_KEY: ${{ secrets.JSONBIN_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          CHAT_BIN_ID: '67c1e550ad19ca34f813c0b5'
+          EMP_BIN_ID: '699333dcd0ea881f40bf132f'
+        run: node scripts/mail_reminders.js

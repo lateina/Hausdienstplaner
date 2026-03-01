@@ -1191,6 +1191,11 @@
 
                 posts = newPosts;
                 if (shouldRender) renderPosts();
+
+                // Check for upcoming reminders if the user is logged in
+                if (currentUser) {
+                    checkUpcomingReminders();
+                }
             } catch (e) {
                 console.error("Error loading board", e);
                 const container = document.getElementById('posts-container');
@@ -1233,6 +1238,9 @@
 
             if (showOnlyRelevant && !isAdmin) {
                 displayPosts = posts.filter(post => {
+                    // Hide done posts from relevant view
+                    if (post.isDone) return false;
+
                     // Always show own posts
                     if (String(post.mitarbeiterId || post.authorId) === currentUserId) return true;
 
@@ -1277,7 +1285,13 @@
                 const dateRangeStr = dateParts.length === 2 ? `${dateParts[0]} - ${dateParts[1]}` : (dateParts[0] || '');
                 const dateHtml = dateRangeStr ? `<div style="margin-bottom: 0.5rem; color: var(--primary); font-weight: 600;">📅 Dienst am: ${dateRangeStr}</div>` : '';
 
+                const isDoneHtml = post.isDone ? `<div style="display: inline-block; background: #10b981; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-bottom: 8px;">✅ Erledigt</div>` : '';
+                if (post.isDone) {
+                    card.style.opacity = '0.7';
+                }
+
                 card.innerHTML = `
+                    ${isDoneHtml}
                     ${post.tags?.length ? `<div class="post-tags" style="margin-bottom: 0.5rem;">${post.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : ''}
                     <div class="post-title" style="margin-bottom: 0.25rem;">${post.title}</div>
                     ${dateHtml}
@@ -1292,6 +1306,7 @@
                         ${isAdmin || String(post.mitarbeiterId || post.authorId) === currentUserId ? `
                             <span class="action-link" style="color: #059669" onclick="sharePost(${post.id})">WhatsApp</span>
                             <span class="action-link" style="color: #6366f1" onclick="shareByEmail(${post.id})">Email</span>
+                            <span class="action-link" style="color: #d97706" onclick="togglePostDone(${post.id})">${post.isDone ? 'Wieder öffnen' : 'Als erledigt markieren'}</span>
                         ` : ''}
                         ${isAdmin ? `<span class="action-link" onclick="markAsSeen(${post.id})">${post.adminSeen ? '✓ Gelesen' : 'Als gelesen markieren'}</span>` : ''}
                         ${isAdmin || String(post.mitarbeiterId || post.authorId) === currentUserId ? `<span class="action-link" style="color: #ef4444" onclick="deletePost(${post.id})">Löschen</span>` : ''}
@@ -1573,6 +1588,83 @@
                 console.error(`Error loading ${type} groups`, e);
                 if (container) container.innerHTML = `<div style="color: #ef4444; padding: 20px;">Fehler: ${e.message}</div>`;
             }
+        }
+
+        async function togglePostDone(postId) {
+            const post = posts.find(p => p.id === postId);
+            if (!post) return;
+
+            // Toggle the isDone status
+            post.isDone = !post.isDone;
+
+            try {
+                // Show loading state by immediately re-rendering
+                renderPosts();
+
+                await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.CHAT_BIN}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': CONFIG.API_KEY
+                    },
+                    body: JSON.stringify({ posts })
+                });
+            } catch (e) {
+                console.error("Error toggling post status", e);
+                // Revert on failure
+                post.isDone = !post.isDone;
+                renderPosts();
+                alert('Fehler beim Ändern des Status. Bitte erneut versuchen.');
+            }
+        }
+
+        function checkUpcomingReminders() {
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+            if (!currentUser) return;
+
+            const now = new Date();
+            now.setHours(0, 0, 0, 0); // Start of today
+
+            // Get previously sent reminders to avoid spamming
+            const sentRemindersRaw = localStorage.getItem('hc-reminders-sent');
+            const sentReminders = sentRemindersRaw ? JSON.parse(sentRemindersRaw) : [];
+
+            posts.forEach(post => {
+                // Only remind the author, and only if the post is not done/erledigt
+                if (String(post.mitarbeiterId || post.authorId) !== String(currentUser.id || currentUser.mitarbeiter_id)) return;
+                if (post.isDone) return;
+                if (!post.targetDate) return;
+
+                // Already sent a reminder for this specific post?
+                if (sentReminders.includes(post.id)) return;
+
+                const targetDate = new Date(post.targetDate);
+                targetDate.setHours(0, 0, 0, 0);
+
+                const diffTime = Math.abs(targetDate - now);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                // If EXACTLY 7 days in the future (or 1-7 days if we missed it and never sent one)
+                if (targetDate > now && diffDays <= 7) {
+                    const group = post.tags && post.tags[0] ? ` (${post.tags[0]})` : '';
+                    const title = `Erinnerung: Tausch offen!`;
+                    const body = `Dein Dienst ${group} am ${targetDate.toLocaleDateString('de-DE')} ist in ${diffDays} Tag(en) und noch nicht erledigt! ("${post.title}")`;
+
+                    const notification = new Notification(title, {
+                        body: body,
+                        icon: 'icon_tight_192.png'
+                    });
+
+                    notification.onclick = () => {
+                        window.focus();
+                        scrollToPost(post.id);
+                    };
+
+                    // Mark as sent
+                    sentReminders.push(post.id);
+                    localStorage.setItem('hc-reminders-sent', JSON.stringify(sentReminders));
+                }
+            });
         }
 
         function renderGroupTabs(type, activeId) {
