@@ -79,9 +79,9 @@ async function checkAndSendReminders() {
             const diffTime = targetDate.getTime() - now.getTime();
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-            // Remind exactly 7 days before
-            if (diffDays === 7) {
-                console.log(`\n>>> Match Found! Post "${post.title}" is due in 7 days (${targetDate.toLocaleDateString('de-DE')})`);
+            // Remind every day for the last 7 days
+            if (diffDays >= 0 && diffDays <= 7) {
+                console.log(`\n>>> Match Found! Post "${post.title}" is due in ${diffDays} days (${targetDate.toLocaleDateString('de-DE')})`);
 
                 let authorEmail = null;
                 const authorId = post.mitarbeiterId || post.authorId;
