@@ -1261,7 +1261,7 @@
                     else if (groupLabel.includes('3. Hausdienst')) card.style.backgroundColor = '#faf5ff'; // Sehr blasses Lila
                     else if (groupLabel.includes('Echo')) card.style.backgroundColor = '#fffff0'; // Sehr blasses Gelb
                     else if (groupLabel.includes('Broncho')) card.style.backgroundColor = '#fff5f5'; // Sehr blasses Rot
-                    else if (groupLabel.includes('Kardio')) card.style.backgroundColor = '#fdf4ff'; // Sehr blasses Pink (Fuchsia)
+                    else if (groupLabel.includes('Kardio')) card.style.backgroundColor = '#fff7ed'; // Sehr blasses Orange
                     else if (groupLabel.includes('Station')) card.style.backgroundColor = '#f8fafc'; // Sehr blasses Grau
                 }
 
@@ -1647,12 +1647,18 @@
                 'Echo-Hintergrund': 'Echo-Hintergrund', 'Broncho-Hintergrund': 'Broncho-Hintergrund', 'Kardio-Hintergrund': 'Kardio-Hintergrund'
             };
 
-            const addGroup = (categoryLabel, distributions) => {
+            const addGroup = (categoryLabel, distributions, filterType) => {
                 const group = document.createElement('optgroup');
                 group.label = categoryLabel;
                 Object.keys(distributions).forEach(key => {
                     // Skip technical groups and non-service groups
                     if (['pool', 'excluded'].includes(key) || key.startsWith('Wegen Schichtdienst')) return;
+
+                    // Filter based on requested type
+                    const isHintergrund = key.includes('Hintergrund');
+                    if (filterType === 'hausdienst_only' && isHintergrund) return;
+                    if (filterType === 'hintergrund_only' && !isHintergrund) return;
+
                     const opt = document.createElement('option');
                     opt.value = labels[key] || key;
                     opt.textContent = labels[key] || key;
@@ -1661,8 +1667,9 @@
                 if (group.children.length > 0) select.appendChild(group);
             };
 
-            addGroup('Hausdienst', groupsState.hausdienst.distributions);
-            addGroup('Visiten', groupsState.visits.distributions);
+            addGroup('Hausdienst', groupsState.hausdienst.distributions, 'hausdienst_only');
+            addGroup('Hintergrund', groupsState.hausdienst.distributions, 'hintergrund_only');
+            addGroup('Visiten', groupsState.visits.distributions, 'all');
 
             // Restore selection if still valid
             select.value = currentValue;
