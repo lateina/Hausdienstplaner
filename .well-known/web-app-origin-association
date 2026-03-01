@@ -1,0 +1,10 @@
+{
+  "web_apps": [
+    {
+      "manifest": "/Hausdienstplaner/manifest.json",
+      "details": {
+        "paths": ["/Hausdienstplaner/*"]
+      }
+    }
+  ]
+}

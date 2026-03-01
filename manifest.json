@@ -3,7 +3,13 @@
   "short_name": "Dienste-Chat",
   "description": "Nachrichtenboard für Assistenzärzte zur Koordination von Hausdiensten.",
   "start_url": "./index.html",
+  "scope": ".",
   "display": "standalone",
+  "url_handlers": [
+    {
+      "origin": "https://lateina.github.io"
+    }
+  ],
   "background_color": "#f8fafc",
   "theme_color": "#6366f1",
   "icons": [
