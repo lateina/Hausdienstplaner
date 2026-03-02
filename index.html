@@ -1247,8 +1247,9 @@
 
             // Re-sync Token if permission already exists
             if (Notification.permission === "granted" && 'serviceWorker' in navigator) {
+                const VAPID_KEY = "BIvQOoeTmwhxDnBipwDnHEfd4HFWVWh_7ahgbToW3r63vvyz8lnaY69TxMMG9wM1R4Y2E6irDpKSaK9rtB2XNuc";
                 navigator.serviceWorker.ready.then(reg => {
-                    messaging.getToken({ serviceWorkerRegistration: reg, vapidKey: "BOyvV3R48C5H9xEqK6oP_qS5nLzH6eN9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9" }).then(token => {
+                    messaging.getToken({ serviceWorkerRegistration: reg, vapidKey: VAPID_KEY }).then(token => {
                         if (token) saveFcmToken(token);
                     }).catch(err => console.log("Dienste-Chat: Token sync error:", err));
                 });

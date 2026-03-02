@@ -12,12 +12,9 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Note: On iOS/Safari, background notifications are often handled more reliably 
-// by the browser natively when the payload contains a 'notification' object.
-// We remove manual showNotification to avoid conflicts/delays.
-messaging.onBackgroundMessage((payload) => {
-  console.log('[sw.js] Background message received (silent log):', payload);
-});
+// IMPORTANT: Do NOT call messaging.onBackgroundMessage() here.
+// On iOS/Safari, the browser shows notifications from the FCM payload automatically.
+// Any JS handler — even an empty one — can intercept and silently drop the notification.
 
 self.addEventListener('notificationclick', (event) => {
   console.log('[sw.js] Notification click Received.', event.notification.data);
@@ -41,7 +38,7 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-const CACHE_NAME = 'dienste-chat-v5';
+const CACHE_NAME = 'dienste-chat-v6';
 const ASSETS = [
   './index.html',
   './manifest.json',
