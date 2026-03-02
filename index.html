@@ -1349,8 +1349,6 @@
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
             const name = currentUser.name || currentUser.mitarbeiter_name;
-            const uid = currentUser.id || currentUser.mitarbeiter_id;
-            console.log("Dienste-Chat: Logged in as:", name, "ID:", uid);
             document.getElementById('user-display-name').textContent = name;
             document.getElementById('user-avatar').textContent = name[0];
 
