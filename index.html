@@ -1482,7 +1482,7 @@
             if (!title || !body) { alert("Bitte Betreff und Nachricht ausfüllen."); return; }
 
             if (!group) {
-                const confirmed = confirm("Keine Dienstgruppe ausgewählt. Möchtest Du den Beitrag wirklich ohne spezifische Gruppe veröffentlichen? (Dies kann dazu führen, dass mehr Personen benachrichtigt werden)");
+                const confirmed = confirm("Keine Dienstgruppe ausgewählt. Dies kann dazu führen, dass mehr Personen benachrichtigt werden.");
                 if (!confirmed) return;
             }
 
