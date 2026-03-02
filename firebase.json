@@ -16,7 +16,7 @@
         "firebase-debug.*.log",
         "*.local"
       ],
-      "source": "functions",
+      "source": "functions"
     }
   ]
 }
