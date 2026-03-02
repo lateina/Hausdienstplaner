@@ -50,3 +50,9 @@ The Hausdienstchat is a lightweight, secure message board designed for assistant
 2. Open `index.html` in any modern browser.
 3. On first load, enter your JSONBin API-Key when prompted.
 4. (Optional) The user can update the specific Bin IDs in the code or via `localStorage` if needed.
+
+## Verification
+- Verified the rendering logic in `index.html`.
+- Verified that `push_notifications.js` correctly updates the `notifiedAt` field.
+- **Fix:** Added `NOT_FOUND` error handling in `push_notifications.js` to automatically remove stale FCM tokens from the old Firebase project.
+- **Refinement:** The script now only marks a post as "notified" (and shows the checkmark) if at least one relevant recipient was found. This prevents "fake" checkmarks when no tokens are registered yet.
