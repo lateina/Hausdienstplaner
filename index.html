@@ -1632,7 +1632,7 @@
             const dienstTyp = getDienstTyp(groupName);
 
             const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
-            const shareText = `Hallo zusammen, ich suche einen Tauschpartner für meinen ${dienstTyp}${dateInfo} ("${post.title}").\n\nKönnte jemand von euch tauschen? Ihr könnt mir direkt hier antworten (${shareUrl})`;
+            const shareText = `Hallo zusammen, ich suche einen Tauschpartner für meinen ${dienstTyp}${dateInfo} ("${post.title}").\n\nKönnte jemand von euch tauschen? Ihr könnt mir direkt hier antworten (${shareUrl}) oder – für die beste Experience – ihr öffnet direkt die installierte App.`;
 
             if (navigator.share) {
                 try { await navigator.share({ title: 'Hausdienst-Tausch', text: shareText, url: shareUrl }); } catch (err) { console.log('Share failed', err); }
@@ -1689,8 +1689,20 @@
             const dateRangeStr = dateParts.length === 2 ? `${dateParts[0]} - ${dateParts[1]}` : (dateParts[0] || '');
             const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
             const to = [...new Set(recipients)].join(',');
-            const subject = encodeURIComponent(`${getDienstTyp(groupName)}-Tausch ${dateRangeStr}`);
-            const body = encodeURIComponent(`Hallo,\nich suche einen Tauschpartner für meinen ${getDienstTyp(groupName)} am ${dateRangeStr}.\nDetails: ${shareUrl}`);
+            const dienstTyp = getDienstTyp(groupName);
+            const dateSubject = dateRangeStr ? `am ${dateRangeStr}` : post.title;
+            const subject = encodeURIComponent(`${dienstTyp}-Tausch ${dateSubject}`);
+            const body = encodeURIComponent(
+                `Hallo zusammen,\n\n` +
+                `ich suche einen Tauschpartner für meinen ${dienstTyp} am ${dateRangeStr || 'einem noch offenen Datum'}.\n\n` +
+                `Details zum Dienst:\n` +
+                `Datum: ${dateRangeStr || 'Siehe Link'}\n` +
+                `Gruppe: ${groupName || 'Dienst'}\n` +
+                `Info: ${post.title}\n\n` +
+                `Könnte jemand von euch tauschen? Ihr könnt mir direkt hier antworten (${shareUrl}) oder – für die beste Experience – ihr öffnet direkt die installierte App.\n` +
+                `Vielen Dank und viele Grüße,\n` +
+                `${post.authorName}`
+            );
             window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
         }
 
