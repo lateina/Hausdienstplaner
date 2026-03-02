@@ -138,6 +138,7 @@ function isRelevant(employee, postGroup, postDate, groupsState) {
     for (const type of ['hausdienst', 'visits']) {
         const state = groupsState[type];
         let distributions = state.assignments || state.distributions || state || {};
+        console.log(`    Checking category: ${type}`);
 
         if (postDate) {
             const dateObj = new Date(postDate);
@@ -152,8 +153,11 @@ function isRelevant(employee, postGroup, postDate, groupsState) {
         const searchKey = reverseLabels[postGroup] || postGroup;
         const assigned = distributions[searchKey];
         if (assigned) {
-            const names = Array.isArray(assigned) ? assigned : [assigned];
-            if (names.some(n => nameMatch(n, name))) return true;
+            if (names.some(n => {
+                const match = nameMatch(n, name);
+                if (match) console.log(`      ✅ Match found in group ${searchKey}: "${n}" matches "${name}"`);
+                return match;
+            })) return true;
         }
         const pool = distributions['pool'];
         if (pool) {
@@ -229,6 +233,7 @@ async function main() {
         const postGroup = post.tags && post.tags[0] ? post.tags[0] : null;
         const postDate = post.targetDate || null;
         const authorName = post.authorName || '';
+        const authorId = String(post.mitarbeiterId || post.authorId || '');
 
         console.log(`\nProcessing: "${post.title}" by ${authorName} (Group: ${postGroup})`);
 
@@ -236,30 +241,45 @@ async function main() {
         const relevantTokens = [];
         for (const tokenDoc of fcmTokenDocs) {
             const token = tokenDoc.token;
-            const uid = tokenDoc._id;
+            const uid = String(tokenDoc._id);
             if (!token) continue;
 
+            if (uid === authorId) {
+                console.log(`  ➡ Skipping token for UID ${uid} (Author of post)`);
+                continue;
+            }
+
             if (uid === 'admin') {
+                console.log(`  ➡ Adding admin token for UID ${uid}`);
                 relevantTokens.push(token);
                 continue;
             }
 
             if (!employeesLoaded) {
+                console.log(`  ➡ Employees not loaded, adding token for UID ${uid}`);
                 relevantTokens.push(token);
                 continue;
             }
 
-            let employee = employees.find(e => String(e.id || e.mitarbeiter_id) === String(uid));
+            let employee = employees.find(e => String(e.id || e.mitarbeiter_id) === uid);
             if (!employee) {
+                // Try numeric match
                 const numericId = parseInt(uid.replace(/\D/g, ''), 10);
                 if (!isNaN(numericId)) {
                     employee = employees.find(e => parseInt(e.id || e.mitarbeiter_id, 10) === numericId);
                 }
             }
-            if (!employee) continue;
 
+            if (!employee) {
+                console.warn(`  ⚠ Token UID ${uid} not found in employees list. Skipping.`);
+                continue;
+            }
+
+            console.log(`  ➡ Checking relevance for employee: ${employee.name || employee.mitarbeiter_name} (ID: ${uid})`);
             if (isRelevant(employee, postGroup, postDate, groupsState)) {
                 relevantTokens.push(token);
+            } else {
+                console.log(`    ❌ Not relevant for this post.`);
             }
         }
 
