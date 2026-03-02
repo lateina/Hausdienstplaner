@@ -1002,6 +1002,17 @@
                 });
 
                 employees = [...assistentenList, ...oberaerzteList];
+
+                // Add Administrator if not present
+                if (!employees.find(e => (e.name || e.mitarbeiter_name) === 'Administrator')) {
+                    employees.push({
+                        id: 'admin_001',
+                        name: 'Administrator',
+                        mitarbeiter_name: 'Administrator',
+                        pin: '1234', // Same as before but now with explicit ID
+                        role: 'Administrator'
+                    });
+                }
                 const getLastName = (nameStr) => {
                     if (!nameStr) return "";
                     let n = nameStr.trim().replace(/^(dr\.\s*|med\.\s*|prof\.\s*)+/i, '').trim();
