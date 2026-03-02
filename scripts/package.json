@@ -5,6 +5,7 @@
     "main": "mail_reminders.js",
     "dependencies": {
         "nodemailer": "^6.9.0",
-        "node-fetch": "^2.6.7"
+        "node-fetch": "^2.6.7",
+        "google-auth-library": "^9.0.0"
     }
 }

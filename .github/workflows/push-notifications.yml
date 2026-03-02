@@ -1,0 +1,34 @@
+name: Send Push Notifications (Poll)
+
+on:
+  schedule:
+    # Runs every 5 minutes
+    - cron: '*/5 * * * *'
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+jobs:
+  push-notifications:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: cd scripts && npm install
+
+      - name: Run push notification script
+        env:
+          FIREBASE_PROJECT_ID: 'dienste-chat-5a359'
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          JSONBIN_KEY: ${{ secrets.JSONBIN_KEY }}
+          EMP_BIN_ID: '699333dcd0ea881f40bf132f'
+          DIST_BIN_ID: '69a1562bae596e708f4ea8f1'
+          VISITS_BIN_ID: '69a157de43b1c97be9a2dda9'
+        run: node scripts/push_notifications.js
