@@ -224,7 +224,7 @@ async function main() {
             const uid = tokenDoc._id;
             if (!token) continue;
 
-            if (uid === 'admin') {
+            if (uid === 'admin' || uid === 'admin_99999') {
                 relevantTokens.push(token);
                 continue;
             }
