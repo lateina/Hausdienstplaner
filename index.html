@@ -1774,6 +1774,10 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', async () => {
                 try {
+                    if (window.location.protocol === 'file:') {
+                        console.warn("Dienste-Chat: Service Worker disabled on local file system (file://). Please use the GitHub Pages URL for full functionality.");
+                        return;
+                    }
                     // Cleanup: Unregister old sw.js if it exists
                     const regs = await navigator.serviceWorker.getRegistrations();
                     for (let registration of regs) {
