@@ -1580,7 +1580,17 @@
                     ${dateRange ? `<div style="color: var(--primary); font-weight: 600;">📅 ${dateRange}</div>` : ''}
                     <div class="post-header" style="border-top: 1px solid #f1f5f9; padding-top: 8px; margin-top: 8px;">
                         <span class="author">${post.authorName}</span>
-                        <span class="timestamp">${new Date(post.createdAt).toLocaleString('de-DE')}</span>
+                        <span class="timestamp">
+                            ${new Date(post.createdAt).toLocaleString('de-DE')}
+                            ${post.notifiedAt ? `
+                                <span style="color: #34b7f1; margin-left: 4px; font-size: 0.9rem;" title="Benachrichtigung versendet">
+                                    <svg width="16" height="11" viewBox="0 0 16 11" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
+                                        <path d="M4.5 9.5L1 6L2.4 4.6L4.5 6.7L9.1 2.1L10.5 3.5L4.5 9.5Z" fill="currentColor"/>
+                                        <path d="M9.5 9.5L6 6L7.4 4.6L9.5 6.7L14.1 2.1L15.5 3.5L9.5 9.5Z" fill="currentColor" opacity="0.8"/>
+                                    </svg>
+                                </span>
+                            ` : ''}
+                        </span>
                     </div>
                     <div class="post-body" style="margin: 12px 0;">${post.body.replace(/\n/g, '<br>')}</div>
                     <div class="replies">${(post.replies || []).map(r => `<div style="border-left: 2px solid #e2e8f0; padding-left: 8px; margin-top: 8px;"><b>${r.authorName}:</b> ${r.body}</div>`).join('')}</div>
