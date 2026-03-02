@@ -841,7 +841,8 @@
             EMPLOYEE_BIN: localStorage.getItem('hc-emp-bin') || '699ffb53ae596e708f4b3de5',
             DISTRIBUTION_BIN: localStorage.getItem('hc-dist-bin') || '69a1562bae596e708f4ea8f1',
             VISITS_BIN: '69a157de43b1c97be9a2dda9',
-            API_KEY: localStorage.getItem('hc-api-key') || ''
+            API_KEY: localStorage.getItem('hc-api-key') || '',
+            VAPID_KEY: "BO9lvRu_KCkZss1z2y-xkHCVxSWfFBvb68_8aH0LIkENo18-B9kJfS_0mjRo2PpLs_pLH3LPZOfmlEgWSBg3qJU"
         };
 
         let currentUser = null;
@@ -1148,10 +1149,9 @@
                 // FCM Token registration (non-blocking for UI feedback)
                 (async () => {
                     try {
-                        const VAPID_KEY = "BO9lvRu_KCkZss1z2y-xkHCVxSWfFBvb68_8aH0LIkENo18-B9kJfS_0mjRo2PpLs_pLH3LPZOfmlEgWSBg3qJU";
                         const registration = await navigator.serviceWorker.ready;
                         const token = await messaging.getToken({
-                            vapidKey: VAPID_KEY,
+                            vapidKey: CONFIG.VAPID_KEY,
                             serviceWorkerRegistration: registration
                         });
                         if (token) {
@@ -1175,12 +1175,13 @@
             if (!currentUser) return;
             const uid = String(currentUser.id || currentUser.mitarbeiter_id);
             try {
+                console.log("Dienste-Chat: Attempting to save FCM Token for UID:", uid);
                 await db.collection("fcm_tokens").doc(uid).set({
                     token: token,
                     mitarbeiterName: currentUser.name || currentUser.mitarbeiter_name,
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                console.log("Dienste-Chat: FCM Token saved to Firestore.");
+                console.log("Dienste-Chat: FCM Token saved correctly to Firestore with ID:", uid);
             } catch (err) {
                 console.error("Dienste-Chat: Error saving FCM Token:", err);
             }
@@ -1258,9 +1259,8 @@
 
             // Re-sync Token if permission already exists
             if (Notification.permission === "granted" && 'serviceWorker' in navigator) {
-                const VAPID_KEY = "BIvQOoeTmwhxDnBipwDnHEfd4HFWVWh_7ahgbToW3r63vvyz8lnaY69TxMMG9wM1R4Y2E6irDpKSaK9rtB2XNuc";
                 navigator.serviceWorker.ready.then(reg => {
-                    messaging.getToken({ serviceWorkerRegistration: reg, vapidKey: VAPID_KEY }).then(token => {
+                    messaging.getToken({ serviceWorkerRegistration: reg, vapidKey: CONFIG.VAPID_KEY }).then(token => {
                         if (token) saveFcmToken(token);
                     }).catch(err => console.log("Dienste-Chat: Token sync error:", err));
                 });
