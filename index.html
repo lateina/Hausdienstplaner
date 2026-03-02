@@ -1245,7 +1245,22 @@
                 return;
             }
 
+            // Re-sync Token if permission already exists
+            if (Notification.permission === "granted" && 'serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(reg => {
+                    messaging.getToken({ serviceWorkerRegistration: reg, vapidKey: "BOyvV3R48C5H9xEqK6oP_qS5nLzH6eN9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9n9" }).then(token => {
+                        if (token) saveFcmToken(token);
+                    }).catch(err => console.log("Dienste-Chat: Token sync error:", err));
+                });
+            }
+
+            // Foreground Message Handler
+            messaging.onMessage((payload) => {
+                console.log("Dienste-Chat: Foreground message received:", payload);
+            });
+
             await loadEmployees();
+
             const saved = localStorage.getItem('hc-user');
             if (saved) {
                 try {
@@ -1256,8 +1271,12 @@
                         if (targetPostId) {
                             setTimeout(() => { scrollToPost(targetPostId); }, 1000);
                         }
-                    } else { localStorage.removeItem('hc-user'); }
-                } catch (e) { localStorage.removeItem('hc-user'); }
+                    } else {
+                        localStorage.removeItem('hc-user');
+                    }
+                } catch (e) {
+                    localStorage.removeItem('hc-user');
+                }
             }
             console.log("Dienste-Chat: App init complete.");
         }

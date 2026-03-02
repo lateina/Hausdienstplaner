@@ -178,14 +178,7 @@ exports.onNewPost = onDocumentCreated({
             webpush: {
                 headers: {
                     Urgency: "high",
-                    TTL: "86400"
-                },
-                notification: {
-                    title: `${post.authorName}${postGroup ? ` (${postGroup})` : ''}`,
-                    body: notificationBody,
-                    icon: "https://lateina.github.io/Hausdienstchat/icon_tight_192.png",
-                    badge: "https://lateina.github.io/Hausdienstchat/icon_tight_192.png",
-                    requireInteraction: true
+                    TTL: "0" // Immediate delivery
                 },
                 fcm_options: {
                     link: `https://lateina.github.io/Hausdienstchat/index.html?post=${postId}`

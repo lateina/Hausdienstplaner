@@ -12,16 +12,11 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// Note: On iOS/Safari, background notifications are often handled more reliably 
+// by the browser natively when the payload contains a 'notification' object.
+// We remove manual showNotification to avoid conflicts/delays.
 messaging.onBackgroundMessage((payload) => {
-  console.log('[sw.js] Received background message ', payload);
-  const notificationTitle = payload.notification.title;
-  const notificationOptions = {
-    body: payload.notification.body,
-    icon: 'https://lateina.github.io/Hausdienstchat/icon_tight_192.png',
-    data: payload.data
-  };
-
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  console.log('[sw.js] Background message received (silent log):', payload);
 });
 
 self.addEventListener('notificationclick', (event) => {
