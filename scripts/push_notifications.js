@@ -135,27 +135,40 @@ function isRelevant(employee, postGroup, postDate, groupsState) {
     if (role === 'Administrator' || name === 'administrator' || id === 'admin') return true;
     if (!postGroup) return true;
 
+    console.log(`    Checking relevance for ${name} (Group: ${postGroup}, PostDate: ${postDate})`);
+
     for (const type of ['hausdienst', 'visits']) {
         const state = groupsState[type];
-        let distributions = state.assignments || state.distributions || state || {};
-        console.log(`    Checking category: ${type}, available groups: ${Object.keys(distributions).join(', ')}`);
-        if (distributions[postGroup]) {
-            console.log(`      Found group "${postGroup}" in distributions.`);
-        }
+        if (!state) continue;
+
+        let distributions = {};
+        let foundMonth = null;
 
         if (postDate) {
             const dateObj = new Date(postDate);
             const monatId = `month_${dateObj.getFullYear()}_${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
-            const month = (state.months || []).find(m => m.monat_id === monatId);
-            if (month && (month.distributions || month.assignments)) {
-                distributions = month.distributions || month.assignments;
-            }
+            foundMonth = (state.months || []).find(m => m.monat_id === monatId);
         }
+
+        // Fallback: If no postDate or month not found, use the latest month in the array
+        if (!foundMonth && Array.isArray(state.months) && state.months.length > 0) {
+            foundMonth = state.months[state.months.length - 1];
+            console.log(`      No specific month found for date ${postDate}, using latest month: ${foundMonth.monat_id}`);
+        }
+
+        if (foundMonth) {
+            distributions = foundMonth.distributions || foundMonth.assignments || {};
+        } else {
+            distributions = state.assignments || state.distributions || state || {};
+        }
+
+        console.log(`    Category ${type}: ${Object.keys(distributions).length} groups found.`);
 
         const reverseLabels = { 'Station 46': 'visite_46', 'Station 18': 'visite_18', 'Station 19': 'visite_19' };
         const searchKey = reverseLabels[postGroup] || postGroup;
         const assigned = distributions[searchKey];
         if (assigned) {
+            const names = Array.isArray(assigned) ? assigned : [assigned];
             if (names.some(n => {
                 const match = nameMatch(n, name);
                 if (match) console.log(`      ✅ Match found in group ${searchKey}: "${n}" matches "${name}"`);
