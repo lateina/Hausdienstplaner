@@ -918,7 +918,7 @@
         }
 
         async function requestNotificationPermission() {
-            console.log("Dienste-Chat: requestNotificationPermission");
+            console.log("Dienste-Chat: requestNotificationPermission, current status:", Notification.permission);
             if (!('Notification' in window)) return;
             if (Notification.permission === 'default') {
                 const btn = document.getElementById('btn-notifications');
@@ -926,6 +926,7 @@
             } else {
                 const btn = document.getElementById('btn-notifications');
                 if (btn) btn.style.display = 'none';
+                console.log("Dienste-Chat: currentUser status:", currentUser ? (currentUser.name || currentUser.mitarbeiter_name) : "null");
                 if (Notification.permission === 'granted' && currentUser) {
                     try {
                         const registration = await navigator.serviceWorker.ready;
