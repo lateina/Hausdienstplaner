@@ -2,3 +2,11 @@ github token
 .DS_Store
 ANLEITUNG.rtf
 backups/
+
+# Firebase Service Account Keys (NEVER commit!)
+*-firebase-adminsdk-*.json
+serviceAccountKey.json
+
+# Node modules
+node_modules/
+functions/node_modules/
