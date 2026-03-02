@@ -1006,10 +1006,10 @@
                 // Add Administrator if not present
                 if (!employees.find(e => (e.name || e.mitarbeiter_name) === 'Administrator')) {
                     employees.push({
-                        id: 'admin_001',
+                        id: 'admin_99999',
                         name: 'Administrator',
                         mitarbeiter_name: 'Administrator',
-                        pin: '1234', // Same as before but now with explicit ID
+                        pin: '1234',
                         role: 'Administrator'
                     });
                 }
