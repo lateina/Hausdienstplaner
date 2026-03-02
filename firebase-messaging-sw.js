@@ -23,7 +23,7 @@ messaging.onBackgroundMessage((payload) => {
       icon: payload.notification.icon || payload.notification.image || './icon_tight_192.png',
       badge: './icon_tight_192.png',
       data: payload.data,
-      tag: payload.data ? payload.data.postId : undefined
+      tag: payload.notification?.tag || (payload.data ? payload.data.postId : undefined)
     };
 
     return self.registration.showNotification(notificationTitle, notificationOptions);
@@ -55,7 +55,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ─── PWA Caching ─────────────────────────────────────────────────────────────
-const CACHE_NAME = 'dienste-chat-v12';
+const CACHE_NAME = 'dienste-chat-v13';
 const ASSETS = [
   './index.html',
   './manifest.json',

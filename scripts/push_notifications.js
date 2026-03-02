@@ -86,7 +86,8 @@ async function sendFcmPush(accessToken, fcmToken, title, body, postId) {
                     title: title,
                     body: body,
                     icon: 'https://lateina.github.io/Hausdienstplaner/icon_tight_192.png',
-                    badge: 'https://lateina.github.io/Hausdienstplaner/icon_tight_192.png'
+                    badge: 'https://lateina.github.io/Hausdienstplaner/icon_tight_192.png',
+                    tag: String(postId)
                 },
                 fcm_options: {
                     link: `https://lateina.github.io/Hausdienstplaner/index.html?post=${postId}`
@@ -225,6 +226,16 @@ async function main() {
         hausdienst: distData?.record || {},
         visits: visitData?.record || {}
     };
+
+    // Normalize Months (same as index.html)
+    ['hausdienst', 'visits'].forEach(type => {
+        if (Array.isArray(groupsState[type].months)) {
+            groupsState[type].months.forEach((m, idx) => {
+                if (!m.monat_id) m.monat_id = m.name || `month_${idx}`;
+            });
+        }
+    });
+
     const employeesLoaded = employees.length > 0;
     console.log(`Loaded: ${employees.length} employees, ${fcmTokenDocs.length} FCM tokens`);
 
