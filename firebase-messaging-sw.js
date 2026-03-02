@@ -24,7 +24,7 @@ messaging.onBackgroundMessage((payload) => {
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-const CACHE_NAME = 'dienste-chat-v4';
+const CACHE_NAME = 'dienste-chat-v5';
 const ASSETS = [
   './index.html',
   './manifest.json',
