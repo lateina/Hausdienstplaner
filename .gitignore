@@ -1,5 +1,6 @@
 github token
 .DS_Store
+ANLEITUNG.rtf
 backups/
 
 # Firebase Service Account Keys (NEVER commit!)
