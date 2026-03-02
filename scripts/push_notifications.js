@@ -138,7 +138,10 @@ function isRelevant(employee, postGroup, postDate, groupsState) {
     for (const type of ['hausdienst', 'visits']) {
         const state = groupsState[type];
         let distributions = state.assignments || state.distributions || state || {};
-        console.log(`    Checking category: ${type}`);
+        console.log(`    Checking category: ${type}, available groups: ${Object.keys(distributions).join(', ')}`);
+        if (distributions[postGroup]) {
+            console.log(`      Found group "${postGroup}" in distributions.`);
+        }
 
         if (postDate) {
             const dateObj = new Date(postDate);
