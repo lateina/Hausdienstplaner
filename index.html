@@ -1216,6 +1216,32 @@
             if (filterContainer) filterContainer.style.display = isCurrentUserAdmin() ? 'none' : 'flex';
         }
 
+        // --- Notification Logic ---
+        function notifyNewPost(post, isReply = false, replyData = null) {
+            console.log("Dienste-Chat: notifyNewPost", post.id, isReply);
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+            const group = post.tags && post.tags[0] ? ` (${post.tags[0]})` : '';
+            let title = `${post.authorName}${group}`;
+            let body = post.title;
+
+            if (isReply && replyData) {
+                title = `${replyData.authorName} (Antwort)`;
+                body = `Zu: ${post.title}\n"${replyData.body}"`;
+            }
+
+            const notification = new Notification(title, {
+                body: body,
+                icon: 'icon_tight_192.png',
+                tag: `post-${post.id}` // Group notifications for the same post
+            });
+
+            notification.onclick = () => {
+                window.focus();
+                scrollToPost(post.id);
+            };
+        }
+
         async function refreshContent() {
             const container = document.getElementById('posts-container');
             if (!posts.length) container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Lade Einträge...</div>';
@@ -1233,6 +1259,7 @@
             console.log("Dienste-Chat: Connecting to Firestore...");
             if (boardUnsubscribe) boardUnsubscribe();
 
+            let isInitialLoad = true;
             const q = db.collection("posts").orderBy("createdAt", "asc");
             boardUnsubscribe = q.onSnapshot((snapshot) => {
                 const newPosts = [];
@@ -1240,7 +1267,44 @@
                     newPosts.push({ id: doc.id, ...doc.data() });
                 });
                 console.log(`Dienste-Chat: Received ${newPosts.length} posts from Firestore.`);
+
+                // Detection of new items for notifications
+                if (!isInitialLoad && currentUser) {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === "added") {
+                            const post = { id: change.doc.id, ...change.doc.data() };
+                            const isAuthor = String(post.mitarbeiterId || post.authorId) === String(currentUser.id || currentUser.mitarbeiter_id);
+
+                            if (!isAuthor) {
+                                const postGroup = post.tags && post.tags[0];
+                                if (isCurrentUserAdmin() || !postGroup || isUserInDienstGroup(postGroup, post.targetDate)) {
+                                    notifyNewPost(post, false);
+                                }
+                            }
+                        }
+                        if (change.type === "modified") {
+                            const post = { id: change.doc.id, ...change.doc.data() };
+                            const oldPost = posts.find(p => p.id === post.id);
+
+                            // Check for new replies
+                            const newRepliesCount = (post.replies || []).length;
+                            const oldRepliesCount = (oldPost?.replies || []).length;
+
+                            if (newRepliesCount > oldRepliesCount) {
+                                const lastReply = post.replies[newRepliesCount - 1];
+                                const isReplyAuthor = lastReply.authorName === (currentUser.name || currentUser.mitarbeiter_name);
+                                const isPostAuthor = String(post.mitarbeiterId || post.authorId) === String(currentUser.id || currentUser.mitarbeiter_id);
+
+                                if (!isReplyAuthor && (isPostAuthor || isCurrentUserAdmin())) {
+                                    notifyNewPost(post, true, lastReply);
+                                }
+                            }
+                        }
+                    });
+                }
+
                 posts = newPosts;
+                isInitialLoad = false;
                 renderPosts();
                 if (currentUser) checkUpcomingReminders();
             }, (error) => {
