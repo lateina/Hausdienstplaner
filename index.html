@@ -661,9 +661,9 @@
         </header>
 
         <div class="nav-tabs">
-            <div class="nav-tab active" onclick="showTab('board')">📋 Message Board</div>
-            <div class="nav-tab" onclick="showTab('hausdienst')">🏠 Dienste</div>
-            <div class="nav-tab" onclick="showTab('visits')">🩺 Visiten</div>
+            <div class="nav-tab active" onclick="showTab('board', event)">📋 Message Board</div>
+            <div class="nav-tab" onclick="showTab('hausdienst', event)">🏠 Dienste</div>
+            <div class="nav-tab" onclick="showTab('visits', event)">🩺 Visiten</div>
         </div>
 
         <!-- Board Section -->
@@ -1114,17 +1114,30 @@
 
         async function requestNotificationPermissionUI() {
             console.log("Dienste-Chat: requestNotificationPermissionUI");
-            if ('Notification' in window) {
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    const btn = document.getElementById('btn-notifications');
-                    if (btn) btn.style.display = 'none';
+            if (!('Notification' in window)) {
+                alert('Dieser Browser unterstützt keine Desktop-Benachrichtigungen.');
+                return;
+            }
 
-                    // FCM Token registration
+            // Safari compatibility: handle both promise and callback
+            let permission = Notification.permission;
+            if (permission === 'default') {
+                try {
+                    permission = await Notification.requestPermission();
+                } catch (e) {
+                    // Fallback for older Safari
+                    permission = await new Promise(resolve => Notification.requestPermission(resolve));
+                }
+            }
+
+            if (permission === 'granted') {
+                const btn = document.getElementById('btn-notifications');
+                if (btn) btn.style.display = 'none';
+
+                // FCM Token registration (non-blocking for UI feedback)
+                (async () => {
                     try {
                         const VAPID_KEY = "BIvQOoeTmwhxDnBipwDnHEfd4HFWVWh_7ahgbToW3r63vvyz8lnaY69TxMMG9wM1R4Y2E6irDpKSaK9rtB2XNuc";
-
-                        // Wait for SW to be ready
                         const registration = await navigator.serviceWorker.ready;
                         const token = await messaging.getToken({
                             vapidKey: VAPID_KEY,
@@ -1133,15 +1146,17 @@
                         if (token) {
                             console.log("Dienste-Chat: FCM Token received:", token);
                             await saveFcmToken(token);
-                        } else {
-                            console.warn("Dienste-Chat: No FCM Token available. Request permission?");
                         }
                     } catch (err) {
                         console.error("Dienste-Chat: Error getting FCM Token:", err);
                     }
+                })();
 
-                    alert('Benachrichtigungen aktiviert!');
-                }
+                alert('Benachrichtigungen wurden aktiviert!');
+            } else if (permission === 'denied') {
+                alert('Benachrichtigungen wurden abgelehnt. Du kannst dies in den Browser-Einstellungen ändern.');
+            } else {
+                console.log("Permission status:", permission);
             }
         }
 
@@ -1685,7 +1700,13 @@
         window.hideSetup = hideSetup;
         window.showSetup = showSetup;
         window.handleLogout = () => { currentUser = null; localStorage.removeItem('hc-user'); document.getElementById('main-app').style.display = 'none'; document.getElementById('login-screen').style.display = 'flex'; };
-        window.showTab = (tab) => { document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active')); event.target.classList.add('active'); if (document.getElementById(`${tab}-section`)) document.getElementById(`${tab}-section`).classList.add('active'); };
+        window.showTab = (tab, e) => {
+            const target = e ? e.currentTarget : event.target;
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            if (target && target.classList) target.classList.add('active');
+            if (document.getElementById(`${tab}-section`)) document.getElementById(`${tab}-section`).classList.add('active');
+        };
         window.openModal = (id) => { document.getElementById(`modal-${id}`).style.display = 'flex'; };
         window.closeModal = () => { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); };
         window.openReplyModal = (postId) => { window.currentReplyPostId = postId; window.openModal('reply'); };
