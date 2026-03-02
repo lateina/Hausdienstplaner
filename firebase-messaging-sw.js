@@ -41,7 +41,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ─── PWA Caching ─────────────────────────────────────────────────────────────
-const CACHE_NAME = 'dienste-chat-v9';
+const CACHE_NAME = 'dienste-chat-v10';
 const ASSETS = [
   './index.html',
   './manifest.json',

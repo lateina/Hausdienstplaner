@@ -71,10 +71,23 @@ async function sendFcmPush(accessToken, fcmToken, title, body, postId) {
     const message = {
         message: {
             token: fcmToken,
-            notification: { title, body },
+            notification: {
+                title,
+                body,
+                image: 'https://lateina.github.io/Hausdienstplaner/icon_tight_192.png'
+            },
             data: { postId: String(postId), type: 'new_post' },
             webpush: {
-                headers: { Urgency: 'high' },
+                headers: {
+                    Urgency: 'high',
+                    TTL: '0'
+                },
+                notification: {
+                    title: title,
+                    body: body,
+                    icon: 'https://lateina.github.io/Hausdienstplaner/icon_tight_192.png',
+                    badge: 'https://lateina.github.io/Hausdienstplaner/icon_tight_192.png'
+                },
                 fcm_options: {
                     link: `https://lateina.github.io/Hausdienstplaner/index.html?post=${postId}`
                 }

@@ -215,6 +215,7 @@ exports.onNewPost = onDocumentCreated({
             notification: {
                 title: `${post.authorName}${postGroup ? ` (${postGroup})` : ''}`,
                 body: notificationBody,
+                image: 'https://lateina.github.io/Hausdienstplaner/icon_tight_192.png'
             },
             data: {
                 postId: postId,
@@ -224,6 +225,12 @@ exports.onNewPost = onDocumentCreated({
                 headers: {
                     Urgency: "high",
                     TTL: "0" // Immediate delivery
+                },
+                notification: {
+                    title: `${post.authorName}${postGroup ? ` (${postGroup})` : ''}`,
+                    body: notificationBody,
+                    icon: 'https://lateina.github.io/Hausdienstplaner/icon_tight_192.png',
+                    badge: 'https://lateina.github.io/Hausdienstplaner/icon_tight_192.png'
                 },
                 fcm_options: {
                     link: `https://lateina.github.io/Hausdienstplaner/index.html?post=${postId}`
