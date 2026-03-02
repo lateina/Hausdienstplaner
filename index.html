@@ -928,11 +928,9 @@
                 if (btn) btn.style.display = 'none';
                 if (Notification.permission === 'granted' && currentUser) {
                     try {
-                        const VAPID_KEY = "BO9lvRu_KCkZss1z2y-xkHCVxSWfFBvb68_8aH0LIkENo18-B9kJfS_0mjRo2PpLs_pLH3LPZOfmlEgWSBg3qJU";
-
                         const registration = await navigator.serviceWorker.ready;
                         const token = await messaging.getToken({
-                            vapidKey: VAPID_KEY,
+                            vapidKey: CONFIG.VAPID_KEY,
                             serviceWorkerRegistration: registration
                         });
                         if (token) await saveFcmToken(token);
