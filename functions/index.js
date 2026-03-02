@@ -34,15 +34,38 @@ exports.onNewPost = onDocumentCreated({
             fetch(`https://api.jsonbin.io/v3/b/${visitsBin.value()}/latest`, { headers })
         ]);
 
+        // Check for HTTP errors before parsing
+        if (!empRes.ok) {
+            console.error(`ERROR: Employee bin fetch failed with status ${empRes.status}. Bin ID: ${employeeBin.value()}`);
+        }
+        if (!distRes.ok) {
+            console.error(`ERROR: Distribution bin fetch failed with status ${distRes.status}.`);
+        }
+        if (!visitRes.ok) {
+            console.error(`ERROR: Visits bin fetch failed with status ${visitRes.status}.`);
+        }
+
         const empData = await empRes.json();
         const distData = await distRes.json();
         const visitData = await visitRes.json();
 
+        console.log(`DEBUG: empData keys: ${Object.keys(empData || {}).join(', ')}`);
+
         // Structure similar to groupsState in index.html
-        const employees = Array.isArray(empData.record) ? empData.record : (empData.record.employees || []);
+        // Robust fallback: handles array, object with .employees, or missing record
+        let employees = [];
+        if (empData && empData.record) {
+            employees = Array.isArray(empData.record)
+                ? empData.record
+                : (empData.record.employees || empData.record.mitarbeiter || []);
+        } else {
+            console.error("WARNING: Could not load employee data from JSONBin. Sending to all tokens (unfiltered).");
+        }
+        console.log(`LOG: ${employees.length} employees loaded.`);
+
         const groupsState = {
-            hausdienst: distData.record || {},
-            visits: visitData.record || {}
+            hausdienst: (distData && distData.record) ? distData.record : {},
+            visits: (visitData && visitData.record) ? visitData.record : {}
         };
 
         // 2. Get all registered FCM tokens
