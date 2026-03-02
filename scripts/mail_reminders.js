@@ -2,7 +2,7 @@ const nodemailer = require('nodemailer');
 
 const JSONBIN_KEY = process.env.JSONBIN_KEY;
 const EMP_BIN_ID = process.env.EMP_BIN_ID;
-const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'dienste-chat';
+const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'dienste-chat-5a359';
 
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
 const SMTP_PORT = process.env.SMTP_PORT || 465;

@@ -811,12 +811,12 @@
 
         // --- Firebase Configuration ---
         const firebaseConfig = {
-            apiKey: "AIzaSyCKOZlEu5QaQ8ISjFmNFFp5AXqypjJ9VCc",
-            authDomain: "dienste-chat.firebaseapp.com",
-            projectId: "dienste-chat",
-            storageBucket: "dienste-chat.firebasestorage.app",
-            messagingSenderId: "25445990011",
-            appId: "1:25445990011:web:993bfdd9b93502653a6cde"
+            apiKey: "AIzaSyAL3ItV7orEMajCU94CoH6fnbp8Gh3dqno",
+            authDomain: "dienste-chat-5a359.firebaseapp.com",
+            projectId: "dienste-chat-5a359",
+            storageBucket: "dienste-chat-5a359.firebasestorage.app",
+            messagingSenderId: "611813592302",
+            appId: "1:611813592302:web:23455d71cfd7fa46c377ff"
         };
 
         if (!firebaseConfig.apiKey || firebaseConfig.appId.length < 20) {
@@ -927,7 +927,7 @@
                 if (btn) btn.style.display = 'none';
                 if (Notification.permission === 'granted' && currentUser) {
                     try {
-                        const VAPID_KEY = "BIvQOoeTmwhxDnBipwDnHEfd4HFWVWh_7ahgbToW3r63vvyz8lnaY69TxMMG9wM1R4Y2E6irDpKSaK9rtB2XNuc";
+                        const VAPID_KEY = "BO9lvRu_KCkZss1z2y-xkHCVxSWfFBvb68_8aH0LIkENo18-B9kJfS_0mjRo2PpLs_pLH3LPZOfmlEgWSBg3qJU";
 
                         const registration = await navigator.serviceWorker.ready;
                         const token = await messaging.getToken({
@@ -1137,7 +1137,7 @@
                 // FCM Token registration (non-blocking for UI feedback)
                 (async () => {
                     try {
-                        const VAPID_KEY = "BIvQOoeTmwhxDnBipwDnHEfd4HFWVWh_7ahgbToW3r63vvyz8lnaY69TxMMG9wM1R4Y2E6irDpKSaK9rtB2XNuc";
+                        const VAPID_KEY = "BO9lvRu_KCkZss1z2y-xkHCVxSWfFBvb68_8aH0LIkENo18-B9kJfS_0mjRo2PpLs_pLH3LPZOfmlEgWSBg3qJU";
                         const registration = await navigator.serviceWorker.ready;
                         const token = await messaging.getToken({
                             vapidKey: VAPID_KEY,

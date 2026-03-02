@@ -2,24 +2,19 @@ importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js'
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: "AIzaSyCKOZlEu5QaQ8ISjFmNFFp5AXqypjJ9VCc",
-  authDomain: "dienste-chat.firebaseapp.com",
-  projectId: "dienste-chat",
-  storageBucket: "dienste-chat.firebasestorage.app",
-  messagingSenderId: "25445990011",
-  appId: "1:25445990011:web:993bfdd9b93502653a6cde"
+  apiKey: "AIzaSyAL3ItV7orEMajCU94CoH6fnbp8Gh3dqno",
+  authDomain: "dienste-chat-5a359.firebaseapp.com",
+  projectId: "dienste-chat-5a359",
+  storageBucket: "dienste-chat-5a359.firebasestorage.app",
+  messagingSenderId: "611813592302",
+  appId: "1:611813592302:web:23455d71cfd7fa46c377ff"
 });
 
 const messaging = firebase.messaging();
 
-// ─── IMPORTANT: No onBackgroundMessage() registered ──────────────────────────
-// When the FCM payload contains a top-level 'notification' object AND
-// onBackgroundMessage is NOT registered, the Firebase SDK shows the
-// notification automatically (native browser/OS handling).
-// This is the most reliable path for iOS PWA background notifications.
-// Registering onBackgroundMessage() — even with an empty body — would
-// intercept and suppress the automatic display on many iOS versions.
-// ─────────────────────────────────────────────────────────────────────────────
+// IMPORTANT: No onBackgroundMessage() registered.
+// Firebase SDK shows notifications automatically from the FCM payload.
+// Registering onBackgroundMessage() — even empty — suppresses native iOS display.
 
 // ─── Notification Click Handler ──────────────────────────────────────────────
 self.addEventListener('notificationclick', (event) => {
@@ -46,7 +41,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ─── PWA Caching ─────────────────────────────────────────────────────────────
-const CACHE_NAME = 'dienste-chat-v8';
+const CACHE_NAME = 'dienste-chat-v9';
 const ASSETS = [
   './index.html',
   './manifest.json',

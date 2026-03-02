@@ -27,7 +27,7 @@ jobs:
         env:
           JSONBIN_KEY: ${{ secrets.JSONBIN_KEY }}
           EMP_BIN_ID: '699333dcd0ea881f40bf132f'
-          FIREBASE_PROJECT_ID: 'dienste-chat'
+          FIREBASE_PROJECT_ID: 'dienste-chat-5a359'
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
