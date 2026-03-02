@@ -162,10 +162,14 @@ exports.onNewPost = onDocumentCreated({
         console.log(`Sending notification to ${tokensToSend.length} devices (filtered from ${tokensSnapshot.size}).`);
 
         // 4. Send Messaging
+        const msgBody = post.body || "";
+        const preview = msgBody.length > 100 ? msgBody.substring(0, 100) + "..." : msgBody;
+        const notificationBody = post.title ? `${post.title}${preview ? `: ${preview}` : ''}` : (preview || "Neuer Beitrag im Dienste-Chat");
+
         const message = {
             notification: {
                 title: `${post.authorName}${postGroup ? ` (${postGroup})` : ''}`,
-                body: post.title || "Neuer Beitrag im Dienste-Chat",
+                body: notificationBody,
             },
             data: {
                 postId: postId,
