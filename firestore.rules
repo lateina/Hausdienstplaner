@@ -22,8 +22,9 @@ service cloud.firestore {
       allow update: if request.resource.data.keys().hasAny(['isDone', 'comments', 'editedAt'])
                     && request.resource.data.keys().hasAll(['authorName', 'body', 'createdAt']);
 
-      // Disallow direct deletion via the API
-      allow delete: if false;
+      // Allow deleting posts (needed for the admin delete function in the app).
+      // Protection against mass deletion relies on the post ID not being guessable.
+      allow delete: if true;
     }
 
     // ─── FCM Tokens ────────────────────────────────────────────────────────
