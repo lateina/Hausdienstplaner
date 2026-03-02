@@ -115,10 +115,18 @@ function normalize(str) {
     return String(str).toLowerCase().replace(/\(.*\)/g, '').replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-function nameMatch(n, userName) {
-    if (!n) return false;
+function nameMatch(n, employee) {
+    if (!n || !employee) return false;
+
+    // ID Match (Priority)
+    if (typeof n === 'object') {
+        const nId = n.employeeId || n.id || n.mitarbeiter_id;
+        const eId = employee.id || employee.mitarbeiter_id || employee.id; // Added fallback
+        if (nId && eId && String(nId) === String(eId)) return true;
+    }
+
     const cleanDistName = normalize(typeof n === 'object' ? (n.name || n.mitarbeiter_name || '') : n);
-    const cleanUserName = normalize(userName);
+    const cleanUserName = normalize(employee.name || employee.mitarbeiter_name || '');
     if (!cleanDistName || !cleanUserName) return false;
     if (cleanDistName === cleanUserName) return true;
     const ignoreList = ['dr', 'dr.', 'med', 'med.', 'prof', 'prof.'];
@@ -170,15 +178,15 @@ function isRelevant(employee, postGroup, postDate, groupsState) {
         if (assigned) {
             const names = Array.isArray(assigned) ? assigned : [assigned];
             if (names.some(n => {
-                const match = nameMatch(n, name);
-                if (match) console.log(`      ✅ Match found in group ${searchKey}: "${n}" matches "${name}"`);
+                const match = nameMatch(n, employee);
+                if (match) console.log(`      ✅ Match found in group ${searchKey}: "${n.name || n}" matches "${employee.name || employee.mitarbeiter_name}"`);
                 return match;
             })) return true;
         }
         const pool = distributions['pool'];
         if (pool) {
             const poolNames = Array.isArray(pool) ? pool : [pool];
-            if (poolNames.some(n => nameMatch(n, name))) {
+            if (poolNames.some(n => nameMatch(n, employee))) {
                 const catGroups = {
                     hausdienst: ['1. Hausdienst', '2. Hausdienst', '3. Hausdienst', 'Echo-Hintergrund', 'Broncho-Hintergrund', 'Kardio-Hintergrund'],
                     visits: ['Station 46', 'Station 18', 'Station 19']
@@ -237,6 +245,7 @@ async function main() {
     // 3. Find new posts that haven't been notified yet
     const newPosts = posts.filter(p => {
         if (p.notifiedAt) return false; // Already notified
+        if (p.isDone) return false;       // Filter out finished posts
         if (!p.createdAt) return false;
         return p.createdAt > cutoff;
     });

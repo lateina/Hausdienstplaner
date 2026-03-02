@@ -132,7 +132,8 @@ exports.onNewPost = onDocumentCreated({
             let isRelevant = false;
             for (const type of ['hausdienst', 'visits']) {
                 const state = groupsState[type];
-                // Handle different JSON structures (assignments, distributions, or flat record)
+                if (!state) continue;
+
                 let distributions = {};
                 let foundMonth = null;
 
@@ -153,20 +154,18 @@ exports.onNewPost = onDocumentCreated({
                     distributions = state.assignments || state.distributions || (state.record ? (state.record.assignments || state.record) : state) || {};
                 }
 
-                const reverseLabels = { 'Station 46': 'visite_46', 'Station 18': 'visite_18', 'Station 19': 'visite_19' };
-                let searchKey = postGroup;
-                if (reverseLabels[postGroup]) searchKey = reverseLabels[postGroup];
-
                 const nameCheck = (n) => {
-                    if (!n) return false;
-                    // Robust Matching (ID fallback)
+                    if (!n || !employee) return false;
+                    // ID Match (Priority)
                     if (typeof n === 'object') {
                         const nId = n.employeeId || n.id || n.mitarbeiter_id;
-                        if (nId && String(nId) === String(mitarbeiterId)) return true;
+                        const eId = employee.id || employee.mitarbeiter_id;
+                        if (nId && eId && String(nId) === String(eId)) return true;
                     }
+
                     const normalize = (str) => String(str).toLowerCase().replace(/\(.*\)/g, '').replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
                     const cleanDistName = normalize(typeof n === 'object' ? (n.name || n.mitarbeiter_name || "") : n);
-                    const cleanUserName = normalize(name);
+                    const cleanUserName = normalize(employee.name || employee.mitarbeiter_name || "");
                     if (!cleanDistName || !cleanUserName) return false;
                     if (cleanDistName === cleanUserName) return true;
                     const ignoreList = ['dr', 'dr.', 'med', 'med.', 'prof', 'prof.'];
@@ -176,11 +175,14 @@ exports.onNewPost = onDocumentCreated({
                     return distWords.every(dw => userWords.includes(dw)) || userWords.every(uw => distWords.includes(uw));
                 };
 
+                const reverseLabels = { 'Station 46': 'visite_46', 'Station 18': 'visite_18', 'Station 19': 'visite_19' };
+                let searchKey = postGroup;
+                if (reverseLabels[postGroup]) searchKey = reverseLabels[postGroup];
+
                 const assigned = distributions[searchKey];
                 if (assigned) {
                     const names = Array.isArray(assigned) ? assigned : [assigned];
                     if (names.some(nameCheck)) {
-                        console.log(`DEBUG: Match found for ${name} in ${searchKey}`);
                         isRelevant = true;
                         break;
                     }
@@ -194,7 +196,6 @@ exports.onNewPost = onDocumentCreated({
                             visits: ['Station 46', 'Station 18', 'Station 19']
                         };
                         if ((catGroups[type] || []).includes(postGroup)) {
-                            console.log(`DEBUG: Match found for ${name} via pool in ${postGroup}`);
                             isRelevant = true;
                             break;
                         }
