@@ -265,9 +265,11 @@ async function main() {
 
         // Send to each token
         const cleanupTokens = [];
+        let sentForThisPost = 0;
         for (const token of uniqueTokens) {
             const result = await sendFcmPush(accessToken, token, notifTitle, notifBody, postId);
             if (result.success) {
+                sentForThisPost++;
                 totalSent++;
                 console.log(`  ✔ Sent to token ${token.substring(0, 20)}...`);
             } else {
@@ -290,8 +292,13 @@ async function main() {
             }
         }
 
-        // Mark post as notified
-        await firestorePatch(post._ref, { notifiedAt: new Date().toISOString() });
+        // Mark post as notified ONLY if at least one was sent
+        if (sentForThisPost > 0) {
+            await firestorePatch(post._ref, { notifiedAt: new Date().toISOString() });
+            console.log(`  ✅ Marked as notified (${sentForThisPost} sent)`);
+        } else {
+            console.log(`  ⚠ Not marking as notified (0 successful sends)`);
+        }
     }
 
     console.log(`\n=== Done. Total push notifications sent: ${totalSent} ===`);
