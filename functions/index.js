@@ -99,16 +99,40 @@ exports.onNewPost = onDocumentCreated({
                 }
 
                 const reverseLabels = { 'Station 46': 'visite_46', 'Station 18': 'visite_18', 'Station 19': 'visite_19' };
-                const searchKey = reverseLabels[postGroup] || postGroup;
-                const assigned = distributions[searchKey] || distributions['pool'] || [];
-                const names = Array.isArray(assigned) ? assigned : [assigned];
+                const nameCheck = (n) => {
+                    if (!n) return false;
+                    // Robust Matching (ID fallback)
+                    if (typeof n === 'object') {
+                        const nId = n.employeeId || n.id || n.mitarbeiter_id;
+                        if (nId && String(nId) === String(mitarbeiterId)) return true;
+                    }
+                    const normalize = (str) => String(str).toLowerCase().replace(/\(.*\)/g, '').replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+                    const cleanDistName = normalize(typeof n === 'object' ? (n.name || n.mitarbeiter_name || "") : n);
+                    const cleanUserName = normalize(name);
+                    if (!cleanDistName || !cleanUserName) return false;
+                    if (cleanDistName === cleanUserName) return true;
+                    const ignoreList = ['dr', 'dr.', 'med', 'med.', 'prof', 'prof.'];
+                    const distWords = cleanDistName.split(' ').filter(w => w.length > 2 && !ignoreList.includes(w));
+                    const userWords = cleanUserName.split(' ').filter(w => w.length > 2 && !ignoreList.includes(w));
+                    if (distWords.length === 0 || userWords.length === 0) return false;
+                    return distWords.every(dw => userWords.includes(dw)) || userWords.every(uw => distWords.includes(uw));
+                };
 
-                if (names.some(n => {
-                    const nName = (typeof n === 'object' ? (n.name || n.mitarbeiter_name) : n || "").toLowerCase();
-                    return nName.includes(name) || name.includes(nName);
-                })) {
-                    isRelevant = true;
-                    break;
+                const assigned = distributions[searchKey];
+                if (assigned) {
+                    const names = Array.isArray(assigned) ? assigned : [assigned];
+                    if (names.some(nameCheck)) { isRelevant = true; break; }
+                }
+                const pool = distributions['pool'];
+                if (pool) {
+                    const poolNames = Array.isArray(pool) ? pool : [pool];
+                    if (poolNames.some(nameCheck)) {
+                        const catGroups = {
+                            hausdienst: ['1. Hausdienst', '2. Hausdienst', '3. Hausdienst', 'Echo-Hintergrund', 'Broncho-Hintergrund', 'Kardio-Hintergrund'],
+                            visits: ['Station 46', 'Station 18', 'Station 19']
+                        };
+                        if ((catGroups[type] || []).includes(postGroup)) { isRelevant = true; break; }
+                    }
                 }
             }
 

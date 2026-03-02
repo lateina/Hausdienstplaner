@@ -879,7 +879,8 @@
             console.log("Dienste-Chat: selectCategoryMonth", type, monthId);
             const month = groupsState[type].months.find(m => m.monat_id === monthId);
             if (month) {
-                groupsState[type].distributions = month.assignments || {};
+                // Support both key names: distributions (newer) and assignments (legacy)
+                groupsState[type].distributions = month.distributions || month.assignments || {};
                 const statusEl = document.getElementById(`${type}-status`);
                 if (statusEl) statusEl.textContent = `Planung für ${month.name || month.monat_id}`;
                 renderCategoryGroups(type);
@@ -1019,43 +1020,84 @@
         }
 
         function isUserInDienstGroup(groupLabel, targetDate) {
-            console.log("Dienste-Chat: isUserInDienstGroup", groupLabel, targetDate);
-            if (!currentUser || isCurrentUserAdmin() || !groupLabel) return true;
-            const currentName = (currentUser.name || currentUser.mitarbeiter_name || "").toLowerCase();
+            if (!currentUser) return false;
+            if (isCurrentUserAdmin()) return true;
+            if (!groupLabel) return false;
+
+            const currentName = (currentUser.name || currentUser.mitarbeiter_name || "").toLowerCase().replace(/,/g, '').trim();
 
             for (const type of ['hausdienst', 'visits']) {
                 const state = groupsState[type];
+                if (!state) continue;
                 let distributions = state.distributions;
+
                 if (targetDate) {
                     const dateObj = new Date(targetDate);
-                    const monatId = `month_${dateObj.getFullYear()}_${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
-                    const month = state.months.find(m => m.monat_id === monatId);
-                    if (month && (month.distributions || month.assignments)) distributions = month.distributions || month.assignments;
+                    if (!isNaN(dateObj.getTime())) {
+                        const monatId = `month_${dateObj.getFullYear()}_${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+                        const month = state.months.find(m => m.monat_id === monatId);
+                        if (month && month.distributions) distributions = month.distributions;
+                        else if (month && month.assignments) distributions = month.assignments;
+                    }
                 }
+
                 const reverseLabels = { 'Station 46': 'visite_46', 'Station 18': 'visite_18', 'Station 19': 'visite_19' };
                 const searchKey = reverseLabels[groupLabel] || groupLabel;
-                const assigned = distributions[searchKey] || distributions['pool'] || [];
-                const names = Array.isArray(assigned) ? assigned : [assigned];
-                if (names.some(n => {
-                    const nName = (typeof n === 'object' ? (n.name || n.mitarbeiter_name) : n || "").toLowerCase();
-                    return nName.includes(currentName) || currentName.includes(nName);
-                })) return true;
+
+                const nameCheck = (n) => {
+                    if (!n) return false;
+                    // Robust Matching from Backup
+                    if (typeof n === 'object' && currentUser) {
+                        const nId = n.employeeId || n.id || n.mitarbeiter_id;
+                        const cId = currentUser.id || currentUser.mitarbeiter_id;
+                        if (nId && cId && String(nId) === String(cId)) return true;
+                    }
+                    const normalize = (str) => String(str).toLowerCase().replace(/\(.*\)/g, '').replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+                    const cleanDistName = normalize(typeof n === 'object' ? (n.name || n.mitarbeiter_name || "") : n);
+                    const cleanUserName = normalize(currentName);
+                    if (!cleanDistName || !cleanUserName) return false;
+                    if (cleanDistName === cleanUserName) return true;
+                    const ignoreList = ['dr', 'dr.', 'med', 'med.', 'prof', 'prof.'];
+                    const distWords = cleanDistName.split(' ').filter(w => w.length > 2 && !ignoreList.includes(w));
+                    const userWords = cleanUserName.split(' ').filter(w => w.length > 2 && !ignoreList.includes(w));
+                    if (distWords.length === 0 || userWords.length === 0) return false;
+                    return distWords.every(dw => userWords.includes(dw)) || userWords.every(uw => distWords.includes(uw));
+                };
+
+                const assigned = distributions[searchKey];
+                if (assigned) {
+                    const names = Array.isArray(assigned) ? assigned : [assigned];
+                    if (names.some(nameCheck)) return true;
+                }
+                const pool = distributions['pool'];
+                if (pool) {
+                    const poolNames = Array.isArray(pool) ? pool : [pool];
+                    if (poolNames.some(nameCheck)) {
+                        const catGroups = {
+                            hausdienst: ['1. Hausdienst', '2. Hausdienst', '3. Hausdienst', 'Echo-Hintergrund', 'Broncho-Hintergrund', 'Kardio-Hintergrund'],
+                            visits: ['Station 46', 'Station 18', 'Station 19']
+                        };
+                        if ((catGroups[type] || []).includes(groupLabel)) return true;
+                    }
+                }
             }
             return false;
         }
 
         function populateGroupSelect() {
-            console.log("Dienste-Chat: populateGroupSelect");
             const select = document.getElementById('post-group-tag');
             if (!select) return;
             const currentValue = select.value;
             select.innerHTML = '<option value="">Keine Auswahl</option>';
             const labels = { 'visite_46': 'Station 46', 'visite_18': 'Station 18', 'visite_19': 'Station 19', '1. Hausdienst': '1. Hausdienst', '2. Hausdienst': '2. Hausdienst', '3. Hausdienst': '3. Hausdienst', 'Echo-Hintergrund': 'Echo-Hintergrund', 'Broncho-Hintergrund': 'Broncho-Hintergrund', 'Kardio-Hintergrund': 'Kardio-Hintergrund' };
-            const addGroup = (categoryLabel, dists) => {
+            const addGroup = (categoryLabel, distributions, filterType) => {
                 const group = document.createElement('optgroup');
                 group.label = categoryLabel;
-                Object.keys(dists).forEach(key => {
+                Object.keys(distributions).forEach(key => {
                     if (['pool', 'excluded'].includes(key)) return;
+                    const isHintergrund = key.includes('Hintergrund');
+                    if (filterType === 'hausdienst_only' && isHintergrund) return;
+                    if (filterType === 'hintergrund_only' && !isHintergrund) return;
                     const opt = document.createElement('option');
                     opt.value = labels[key] || key;
                     opt.textContent = labels[key] || key;
@@ -1063,8 +1105,9 @@
                 });
                 if (group.children.length > 0) select.appendChild(group);
             };
-            addGroup('Hausdienst', groupsState.hausdienst.distributions);
-            addGroup('Visiten', groupsState.visits.distributions);
+            addGroup('Hausdienst', groupsState.hausdienst.distributions, 'hausdienst_only');
+            addGroup('Hintergrund', groupsState.hausdienst.distributions, 'hintergrund_only');
+            addGroup('Visiten', groupsState.visits.distributions, 'all');
             select.value = currentValue;
         }
 
@@ -1571,15 +1614,53 @@
             const post = posts.find(p => p.id === postId);
             if (!post) return;
             const groupName = post.tags && post.tags[0];
+            let recipients = [];
+            if (groupName) {
+                const nameCheck = (n, emp) => {
+                    if (!n || !emp) return false;
+                    const nId = typeof n === 'object' ? (n.employeeId || n.id || n.mitarbeiter_id) : null;
+                    const eId = emp.id || emp.mitarbeiter_id;
+                    if (nId && eId && String(nId) === String(eId)) return true;
+                    const normalize = (str) => String(str).toLowerCase().replace(/\(.*\)/g, '').replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+                    const cleanDistName = normalize(typeof n === 'object' ? (n.name || n.mitarbeiter_name || "") : n);
+                    const cleanEmpName = normalize(emp.name || emp.mitarbeiter_name || "");
+                    if (!cleanDistName || !cleanEmpName) return false;
+                    if (cleanDistName === cleanEmpName) return true;
+                    const ignoreList = ['dr', 'dr.', 'med', 'med.', 'prof', 'prof.'];
+                    const distWords = cleanDistName.split(' ').filter(w => w.length > 2 && !ignoreList.includes(w));
+                    const empWords = cleanEmpName.split(' ').filter(w => w.length > 2 && !ignoreList.includes(w));
+                    if (distWords.length === 0 || empWords.length === 0) return false;
+                    return distWords.every(dw => empWords.includes(dw)) || empWords.every(uw => distWords.includes(uw));
+                };
+                for (const type of ['hausdienst', 'visits']) {
+                    const state = groupsState[type];
+                    let dists = state.distributions || {};
+                    if (post.targetDate) {
+                        const dateObj = new Date(post.targetDate);
+                        const monatId = `month_${dateObj.getFullYear()}_${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+                        const month = state.months.find(m => m.monat_id === monatId);
+                        if (month && (month.distributions || month.assignments)) dists = month.distributions || month.assignments;
+                    }
+                    const rev = { 'Station 46': 'visite_46', 'Station 18': 'visite_18', 'Station 19': 'visite_19' };
+                    const assigned = dists[rev[groupName] || groupName];
+                    if (assigned) {
+                        const names = Array.isArray(assigned) ? assigned : [assigned];
+                        names.forEach(n => {
+                            const emp = employees.find(e => nameCheck(n, e));
+                            if (emp && (emp.email || emp.mitarbeiter_email)) recipients.push(emp.email || emp.mitarbeiter_email);
+                        });
+                    }
+                }
+            }
             const dateParts = [];
             if (post.targetDate) dateParts.push(new Date(post.targetDate).toLocaleDateString('de-DE'));
             if (post.endDate) dateParts.push(new Date(post.endDate).toLocaleDateString('de-DE'));
             const dateRangeStr = dateParts.length === 2 ? `${dateParts[0]} - ${dateParts[1]}` : (dateParts[0] || '');
-
             const shareUrl = `${window.location.origin}${window.location.pathname}?post=${postId}`;
+            const to = [...new Set(recipients)].join(',');
             const subject = encodeURIComponent(`${getDienstTyp(groupName)}-Tausch ${dateRangeStr}`);
-            const body = encodeURIComponent(`Hallo,\nich suche einen Tauschpartner für ${dateRangeStr}.\nDetails: ${shareUrl}`);
-            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+            const body = encodeURIComponent(`Hallo,\nich suche einen Tauschpartner für meinen ${getDienstTyp(groupName)} am ${dateRangeStr}.\nDetails: ${shareUrl}`);
+            window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
         }
 
         // --- UI Bridge ---
