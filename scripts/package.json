@@ -1,0 +1,10 @@
+{
+    "name": "hausdienstchat-scripts",
+    "version": "1.0.0",
+    "description": "Assistant scripts for Hausdienstchat",
+    "main": "mail_reminders.js",
+    "dependencies": {
+        "nodemailer": "^6.9.0",
+        "node-fetch": "^2.6.7"
+    }
+}

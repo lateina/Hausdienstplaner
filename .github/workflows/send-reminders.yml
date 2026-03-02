@@ -21,16 +21,16 @@ jobs:
           node-version: '18'
           
       - name: Install dependencies
-        run: cd scripts && npm install nodemailer node-fetch
+        run: cd scripts && npm install
         
       - name: Run reminder script
         env:
           JSONBIN_KEY: ${{ secrets.JSONBIN_KEY }}
+          EMP_BIN_ID: '699333dcd0ea881f40bf132f'
+          FIREBASE_PROJECT_ID: 'dienste-chat'
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
-          CHAT_BIN_ID: '69a1781cae596e708f4efed8'
-          EMP_BIN_ID: '699333dcd0ea881f40bf132f'
         run: node scripts/mail_reminders.js
