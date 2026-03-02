@@ -1728,14 +1728,13 @@
         window.togglePostDone = togglePostDone;
         window.sharePost = sharePost;
         window.shareByEmail = shareByEmail;
-        window.requestNotificationPermissionUI = () => { Notification.requestPermission(); };
         window.dismissIosPrompt = () => { document.getElementById('ios-prompt').classList.remove('show'); localStorage.setItem('hc-ios-prompt-dismissed', 'true'); };
         window.dismissInstalledPrompt = () => { document.getElementById('installed-prompt').classList.remove('show'); localStorage.setItem('hc-installed-prompt-dismissed', 'true'); };
 
         // --- SW Registration ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').then(reg => {
+                navigator.serviceWorker.register('./firebase-messaging-sw.js').then(reg => {
                     setInterval(() => reg.update(), 300000);
                 });
                 let refreshing = false;

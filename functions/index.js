@@ -171,6 +171,24 @@ exports.onNewPost = onDocumentCreated({
                 postId: postId,
                 type: "new_post"
             },
+            webpush: {
+                headers: {
+                    Urgency: "high"
+                },
+                notification: {
+                    icon: "https://lateina.github.io/Hausdienstchat/icon_tight_192.png",
+                    badge: "https://lateina.github.io/Hausdienstchat/icon_tight_192.png",
+                    click_action: `https://lateina.github.io/Hausdienstchat/index.html?post=${postId}`
+                }
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        sound: "default",
+                        badge: 1
+                    }
+                }
+            },
             tokens: tokensToSend,
         };
 
