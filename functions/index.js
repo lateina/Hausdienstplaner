@@ -224,7 +224,7 @@ exports.onNewPost = onDocumentCreated({
             webpush: {
                 headers: {
                     Urgency: "high",
-                    TTL: "0" // Immediate delivery
+                    TTL: "86400" // 24 hours delivery
                 },
                 notification: {
                     title: `${post.authorName}${postGroup ? ` (${postGroup})` : ''}`,

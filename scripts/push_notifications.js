@@ -80,7 +80,7 @@ async function sendFcmPush(accessToken, fcmToken, title, body, postId) {
             webpush: {
                 headers: {
                     Urgency: 'high',
-                    TTL: '0'
+                    TTL: '86400'
                 },
                 notification: {
                     title: title,

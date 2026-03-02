@@ -12,9 +12,12 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// IMPORTANT: No onBackgroundMessage() registered.
-// Firebase SDK shows notifications automatically from the FCM payload.
-// Registering onBackgroundMessage() — even empty — suppresses native iOS display.
+// ─── Background Messaging ────────────────────────────────────────────────────
+messaging.onBackgroundMessage((payload) => {
+  console.log('[SW] Background message received:', payload);
+  // Customize notification here if needed. 
+  // For iOS, the top-level 'notification' in the payload usually suffices.
+});
 
 // ─── Notification Click Handler ──────────────────────────────────────────────
 self.addEventListener('notificationclick', (event) => {
@@ -41,7 +44,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ─── PWA Caching ─────────────────────────────────────────────────────────────
-const CACHE_NAME = 'dienste-chat-v10';
+const CACHE_NAME = 'dienste-chat-v11';
 const ASSETS = [
   './index.html',
   './manifest.json',
