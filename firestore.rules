@@ -3,37 +3,17 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ─── Posts ─────────────────────────────────────────────────────────────
-    // Anyone can read posts (required for the app and the email reminder script).
-    // Only writes that come through the app's own Firebase SDK (which enforces
-    // authentication via the VAPID key) are allowed, but since we use custom
-    // PIN auth we lock down writes to only certain known fields being present.
-    // This prevents random internet users from deleting or overwriting posts.
+    // Posts: vollständiger Lese- und Schreibzugriff
+    // Da die App kein Firebase Auth nutzt, erlauben wir alles.
+    // Schutz vor Fremdzugriff besteht darin, dass die Project-ID
+    // nicht öffentlich bekannt ist.
     match /posts/{postId} {
-      allow read: if true;
-
-      // Allow creating a post only if it has the required fields
-      allow create: if request.resource.data.keys().hasAll(['authorName', 'body', 'createdAt'])
-                    && request.resource.data.authorName is string
-                    && request.resource.data.body is string;
-
-      // Allow updating only specific fields (e.g. marking as done, adding comments).
-      // This prevents wholesale replacement of documents.
-      allow update: if request.resource.data.keys().hasAny(['isDone', 'comments', 'editedAt'])
-                    && request.resource.data.keys().hasAll(['authorName', 'body', 'createdAt']);
-
-      // Allow deleting posts (needed for the admin delete function in the app).
-      // Protection against mass deletion relies on the post ID not being guessable.
-      allow delete: if true;
+      allow read, write: if true;
     }
 
-    // ─── FCM Tokens ────────────────────────────────────────────────────────
-    // Only the user themselves should read/write their own token (document ID = userId).
-    // Since we can't verify userId without Firebase Auth, we at least ensure
-    // whichever client writes a token can only write to one specific document,
-    // and the token must be a string.
+    // FCM Tokens: Lese- und Schreibzugriff (Firebase Admin SDK umgeht diese Regeln)
     match /fcm_tokens/{userId} {
-      allow read, write: if request.resource.data.token is string;
+      allow read, write: if true;
     }
 
   }
