@@ -20,7 +20,11 @@ messaging.onBackgroundMessage((payload) => {
   const data = payload.data || {};
   const notification = payload.notification || {};
 
-  const notificationTitle = notification.title || 'Dienste-Chat';
+  // If payload.notification exists, the browser MIGHT show it automatically.
+  // To avoid double notifications, we only show manually if no title was provided in the FCM "notification" block.
+  // However, on iOS, the most reliable way is to send ONLY "data" and handled it here.
+
+  const notificationTitle = notification.title || data.title || 'Dienste-Chat';
   const notificationOptions = {
     body: notification.body || data.body || 'Neuer Beitrag',
     icon: notification.icon || notification.image || data.icon || './icon_tight_192.png',
@@ -28,9 +32,6 @@ messaging.onBackgroundMessage((payload) => {
     data: data,
     tag: notification.tag || data.tag || data.postId || 'dienste-chat-notif'
   };
-
-  // Skip showing if title/body are empty (might be a silent data sync)
-  if (!notificationTitle && !notificationOptions.body) return;
 
   return self.registration.showNotification(notificationTitle, notificationOptions);
 });
@@ -60,7 +61,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ─── PWA Caching ─────────────────────────────────────────────────────────────
-const CACHE_NAME = 'dienste-chat-v14';
+const CACHE_NAME = 'dienste-chat-v15';
 const ASSETS = [
   './index.html',
   './manifest.json',

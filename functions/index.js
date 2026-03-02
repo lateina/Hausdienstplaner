@@ -224,22 +224,16 @@ exports.onNewPost = onDocumentCreated({
         const message = {
             data: {
                 postId: postId,
-                type: "new_post"
+                type: "new_post",
+                title: `${post.authorName}${postGroup ? ` (${postGroup})` : ''}`,
+                body: notificationBody,
+                tag: String(postId),
+                icon: 'https://lateina.github.io/Hausdienstplaner/icon_tight_192.png'
             },
             webpush: {
                 headers: {
                     Urgency: "high",
-                    TTL: "86400" // 24 hours delivery
-                },
-                notification: {
-                    title: `${post.authorName}${postGroup ? ` (${postGroup})` : ''}`,
-                    body: notificationBody,
-                    icon: 'https://lateina.github.io/Hausdienstplaner/icon_tight_192.png',
-                    badge: 'https://lateina.github.io/Hausdienstplaner/icon_tight_192.png',
-                    tag: String(postId)
-                },
-                fcm_options: {
-                    link: `https://lateina.github.io/Hausdienstplaner/index.html?post=${postId}`
+                    TTL: "86400"
                 }
             },
             tokens: tokensToSend,
