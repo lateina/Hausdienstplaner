@@ -1733,14 +1733,29 @@
 
         // --- SW Registration ---
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./firebase-messaging-sw.js').then(reg => {
+            window.addEventListener('load', async () => {
+                try {
+                    // Cleanup: Unregister old sw.js if it exists
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of regs) {
+                        if (registration.active && registration.active.scriptURL.includes('sw.js') && !registration.active.scriptURL.includes('firebase-messaging-sw.js')) {
+                            console.log("Dienste-Chat: Unregistering old SW:", registration.active.scriptURL);
+                            await registration.unregister();
+                        }
+                    }
+
+                    // Register new consolidated SW
+                    const reg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+                    console.log("Dienste-Chat: SW registered:", reg.scope);
                     setInterval(() => reg.update(), 300000);
-                });
-                let refreshing = false;
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    if (!refreshing) { refreshing = true; window.location.reload(); }
-                });
+
+                    let refreshing = false;
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        if (!refreshing) { refreshing = true; window.location.reload(); }
+                    });
+                } catch (err) {
+                    console.error("Dienste-Chat: SW registration failed:", err);
+                }
             });
         }
 

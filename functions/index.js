@@ -177,20 +177,18 @@ exports.onNewPost = onDocumentCreated({
             },
             webpush: {
                 headers: {
-                    Urgency: "high"
+                    Urgency: "high",
+                    TTL: "86400"
                 },
                 notification: {
+                    title: `${post.authorName}${postGroup ? ` (${postGroup})` : ''}`,
+                    body: notificationBody,
                     icon: "https://lateina.github.io/Hausdienstchat/icon_tight_192.png",
                     badge: "https://lateina.github.io/Hausdienstchat/icon_tight_192.png",
-                    click_action: `https://lateina.github.io/Hausdienstchat/index.html?post=${postId}`
-                }
-            },
-            apns: {
-                payload: {
-                    aps: {
-                        sound: "default",
-                        badge: 1
-                    }
+                    requireInteraction: true
+                },
+                fcm_options: {
+                    link: `https://lateina.github.io/Hausdienstchat/index.html?post=${postId}`
                 }
             },
             tokens: tokensToSend,

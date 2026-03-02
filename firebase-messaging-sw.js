@@ -24,6 +24,28 @@ messaging.onBackgroundMessage((payload) => {
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
+self.addEventListener('notificationclick', (event) => {
+  console.log('[sw.js] Notification click Received.', event.notification.data);
+  event.notification.close();
+
+  const postId = event.notification.data ? event.notification.data.postId : null;
+  const urlToOpen = new URL(postId ? `./index.html?post=${postId}` : './index.html', self.location.origin).href;
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (let i = 0; i < windowClients.length; i++) {
+        const client = windowClients[i];
+        if (client.url === urlToOpen && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
+});
+
 const CACHE_NAME = 'dienste-chat-v5';
 const ASSETS = [
   './index.html',
