@@ -117,7 +117,7 @@ function isRelevant(employee, postGroup, postDate, groupsState) {
     const name = (employee.name || employee.mitarbeiter_name || '').toLowerCase();
     const role = employee.role || '';
     const id = employee.id || employee.mitarbeiter_id || '';
-    if (role === 'Administrator' || name === 'administrator' || id === 'admin_99999' || id === 'admin') return true;
+    if (role === 'Administrator' || name === 'administrator' || id === 'admin') return true;
     if (!postGroup) return true;
 
     for (const type of ['hausdienst', 'visits']) {
@@ -224,7 +224,7 @@ async function main() {
             const uid = tokenDoc._id;
             if (!token) continue;
 
-            if (uid === 'admin' || uid === 'admin_99999') {
+            if (uid === 'admin') {
                 relevantTokens.push(token);
                 continue;
             }
