@@ -656,6 +656,7 @@
                 <button class="btn-ghost" id="btn-notifications"
                     style="display: none; padding: 0.5rem; font-size: 1.2rem;"
                     onclick="requestNotificationPermissionUI()" title="Benachrichtigungen aktivieren">🔕</button>
+                <button class="btn-ghost" onclick="hardResetPush()" title="Push zurücksetzen">🔄</button>
                 <button class="btn-ghost" onclick="handleLogout()">Abmelden</button>
             </div>
         </header>
@@ -1158,6 +1159,22 @@
                 alert('Benachrichtigungen sind blockiert. \n\nUm diese zu aktivieren: \n1. Klicke auf das Schloss-Symbol neben der URL. \n2. Stelle "Benachrichtigungen" auf "Ein" oder "Erlauben". \n3. Lade die Seite neu.');
             } else {
                 console.log("Permission status:", permission);
+            }
+        }
+
+        async function hardResetPush() {
+            if (!confirm("Möchtest du die Benachrichtigungen wirklich zurücksetzen und neu registrieren?")) return;
+            try {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let reg of registrations) await reg.unregister();
+                const token = await messaging.getToken({ vapidKey: CONFIG.VAPID_KEY });
+                if (token) await messaging.deleteToken();
+                localStorage.removeItem('hc-ios-prompt-dismissed');
+                alert("Push-System zurückgesetzt. Die Seite wird neu geladen.");
+                window.location.reload();
+            } catch (err) {
+                console.error("Dienste-Chat: Error during hard reset:", err);
+                alert("Fehler beim Zurücksetzen. Bitte lade die Seite manuell neu.");
             }
         }
 

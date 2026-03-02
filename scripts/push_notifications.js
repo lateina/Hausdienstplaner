@@ -11,6 +11,8 @@ const VISITS_BIN_ID = process.env.VISITS_BIN_ID;
 // How far back to look for new posts (in minutes)
 const LOOKBACK_MINUTES = 1440; // 24 hours
 
+console.log(`Using Firebase Project ID: ${FIREBASE_PROJECT_ID}`);
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function getFcmAccessToken() {
