@@ -246,8 +246,7 @@ async function main() {
         console.log(`  → ${uniqueTokens.length} relevant recipients`);
 
         if (uniqueTokens.length === 0) {
-            // Still mark as notified to avoid rechecking
-            await firestorePatch(post._ref, { notifiedAt: new Date().toISOString() });
+            console.log(`  → No relevant recipients found. Skipping notification mark.`);
             continue;
         }
 
@@ -265,7 +264,7 @@ async function main() {
                 console.log(`  ✔ Sent to token ${token.substring(0, 20)}...`);
             } else {
                 const errCode = result.error?.error?.status;
-                if (errCode === 'UNREGISTERED' || errCode === 'INVALID_ARGUMENT') {
+                if (errCode === 'UNREGISTERED' || errCode === 'INVALID_ARGUMENT' || errCode === 'NOT_FOUND') {
                     cleanupTokens.push(token);
                 }
                 console.warn(`  ✗ Failed: ${JSON.stringify(result.error?.error?.message)}`);
