@@ -71,11 +71,6 @@ async function sendFcmPush(accessToken, fcmToken, title, body, postId) {
     const message = {
         message: {
             token: fcmToken,
-            notification: {
-                title,
-                body,
-                image: 'https://lateina.github.io/Hausdienstplaner/icon_tight_192.png'
-            },
             data: { postId: String(postId), type: 'new_post' },
             webpush: {
                 headers: {

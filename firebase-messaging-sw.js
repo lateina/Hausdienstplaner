@@ -16,18 +16,23 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
 
-  if (payload.notification) {
-    const notificationTitle = payload.notification.title;
-    const notificationOptions = {
-      body: payload.notification.body,
-      icon: payload.notification.icon || payload.notification.image || './icon_tight_192.png',
-      badge: './icon_tight_192.png',
-      data: payload.data,
-      tag: payload.notification?.tag || (payload.data ? payload.data.postId : undefined)
-    };
+  // Extract data for the notification
+  const data = payload.data || {};
+  const notification = payload.notification || {};
 
-    return self.registration.showNotification(notificationTitle, notificationOptions);
-  }
+  const notificationTitle = notification.title || 'Dienste-Chat';
+  const notificationOptions = {
+    body: notification.body || data.body || 'Neuer Beitrag',
+    icon: notification.icon || notification.image || data.icon || './icon_tight_192.png',
+    badge: './icon_tight_192.png',
+    data: data,
+    tag: notification.tag || data.tag || data.postId || 'dienste-chat-notif'
+  };
+
+  // Skip showing if title/body are empty (might be a silent data sync)
+  if (!notificationTitle && !notificationOptions.body) return;
+
+  return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
 // ─── Notification Click Handler ──────────────────────────────────────────────
@@ -55,7 +60,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ─── PWA Caching ─────────────────────────────────────────────────────────────
-const CACHE_NAME = 'dienste-chat-v13';
+const CACHE_NAME = 'dienste-chat-v14';
 const ASSETS = [
   './index.html',
   './manifest.json',

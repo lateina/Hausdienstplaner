@@ -222,11 +222,6 @@ exports.onNewPost = onDocumentCreated({
         const notificationBody = post.title ? `${post.title}${preview ? `: ${preview}` : ''}` : (preview || "Neuer Beitrag im Dienste-Chat");
 
         const message = {
-            notification: {
-                title: `${post.authorName}${postGroup ? ` (${postGroup})` : ''}`,
-                body: notificationBody,
-                image: 'https://lateina.github.io/Hausdienstplaner/icon_tight_192.png'
-            },
             data: {
                 postId: postId,
                 type: "new_post"
