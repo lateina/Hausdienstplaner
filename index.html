@@ -1094,7 +1094,8 @@
                 const group = document.createElement('optgroup');
                 group.label = categoryLabel;
                 Object.keys(distributions).forEach(key => {
-                    if (['pool', 'excluded'].includes(key)) return;
+                    // Skip technical groups, non-service groups, and internal organizational categories
+                    if (['pool', 'excluded'].includes(key) || key.startsWith('Wegen Schichtdienst')) return;
                     const isHintergrund = key.includes('Hintergrund');
                     if (filterType === 'hausdienst_only' && isHintergrund) return;
                     if (filterType === 'hintergrund_only' && !isHintergrund) return;
