@@ -1567,15 +1567,30 @@
             try {
                 const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, { headers: { 'X-Master-Key': CONFIG.API_KEY } });
                 const data = await res.json();
-                groupsState[type].months = data.record.months || [];
+                if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+
+                const record = data.record;
+                groupsState[type].months = record.months || [];
+
+                // Normalization from Backup: Ensure every month has a monat_id
+                groupsState[type].months.forEach((m, idx) => {
+                    if (!m.monat_id) m.monat_id = m.name || `month_${idx}`;
+                });
+
                 if (groupsState[type].months.length > 0) {
                     const now = new Date();
                     const monthId = `month_${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, '0')}`;
                     const initialMonth = groupsState[type].months.find(m => m.monat_id === monthId) || groupsState[type].months[0];
                     renderGroupTabs(type, initialMonth.monat_id);
                     selectCategoryMonth(type, initialMonth.monat_id);
+                } else {
+                    // Fallback for bins without months structure
+                    groupsState[type].distributions = record.distributions || record.assignments || record || {};
+                    renderCategoryGroups(type);
                 }
-            } catch (e) { console.error("Error loading groups", e); }
+            } catch (e) {
+                console.error(`Error loading ${type} groups`, e);
+            }
         }
 
         // --- Sharing Logic ---
