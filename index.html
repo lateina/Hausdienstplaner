@@ -804,6 +804,7 @@
     <!-- Firebase SDK (Compat Mode for local file:// support) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js"></script>
 
     <!-- Main Application Logic -->
     <script>
@@ -831,7 +832,8 @@
         console.log("Dienste-Chat: Initializing Firebase (Compat)...");
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        console.log("Dienste-Chat: Firebase initialized, db ready.");
+        const messaging = firebase.messaging();
+        console.log("Dienste-Chat: Firebase initialized, db and messaging ready.");
         // alert("Firebase initialisiert!"); // Nur zum Testen, ob JS überhaupt läuft
 
         // --- App State ---
@@ -913,13 +915,24 @@
             });
         }
 
-        function requestNotificationPermission() {
+        async function requestNotificationPermission() {
             console.log("Dienste-Chat: requestNotificationPermission");
             if (!('Notification' in window)) return;
             if (Notification.permission === 'default') {
-                document.getElementById('btn-notifications').style.display = 'block';
+                const btn = document.getElementById('btn-notifications');
+                if (btn) btn.style.display = 'block';
             } else {
-                document.getElementById('btn-notifications').style.display = 'none';
+                const btn = document.getElementById('btn-notifications');
+                if (btn) btn.style.display = 'none';
+                if (Notification.permission === 'granted' && currentUser) {
+                    try {
+                        const VAPID_KEY = "BIvQOoeTmwhxDnBipwDnHEfd4HFWVWh_7ahgbToW3r63vvyz8lnaY69TxMMG9wM1R4Y2E6irDpKSaK9rtB2XNuc";
+                        const token = await messaging.getToken({ vapidKey: VAPID_KEY });
+                        if (token) await saveFcmToken(token);
+                    } catch (err) {
+                        console.error("Dienste-Chat: Auto FCM Token Error:", err);
+                    }
+                }
             }
         }
 
@@ -1057,8 +1070,38 @@
                 if (permission === 'granted') {
                     const btn = document.getElementById('btn-notifications');
                     if (btn) btn.style.display = 'none';
+
+                    // FCM Token registration
+                    try {
+                        const VAPID_KEY = "BIvQOoeTmwhxDnBipwDnHEfd4HFWVWh_7ahgbToW3r63vvyz8lnaY69TxMMG9wM1R4Y2E6irDpKSaK9rtB2XNuc";
+                        const token = await messaging.getToken({ vapidKey: VAPID_KEY });
+                        if (token) {
+                            console.log("Dienste-Chat: FCM Token received:", token);
+                            await saveFcmToken(token);
+                        } else {
+                            console.warn("Dienste-Chat: No FCM Token available. Request permission?");
+                        }
+                    } catch (err) {
+                        console.error("Dienste-Chat: Error getting FCM Token:", err);
+                    }
+
                     alert('Benachrichtigungen aktiviert!');
                 }
+            }
+        }
+
+        async function saveFcmToken(token) {
+            if (!currentUser) return;
+            const uid = String(currentUser.id || currentUser.mitarbeiter_id);
+            try {
+                await db.collection("fcm_tokens").doc(uid).set({
+                    token: token,
+                    mitarbeiterName: currentUser.name || currentUser.mitarbeiter_name,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                console.log("Dienste-Chat: FCM Token saved to Firestore.");
+            } catch (err) {
+                console.error("Dienste-Chat: Error saving FCM Token:", err);
             }
         }
 
