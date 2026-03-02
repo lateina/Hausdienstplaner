@@ -1,49 +1,27 @@
-// ============================================================
-// firebase-messaging-sw.js
-// Service Worker for Dienste-Chat PWA
-//
-// IMPORTANT: We do NOT import the Firebase Messaging SDK here.
-// The Firebase JS SDK intercepts the raw 'push' event and HOLDS
-// messages unless onBackgroundMessage() is defined. On iOS, this
-// prevents notifications from being shown in the background.
-//
-// Instead, we handle the 'push' event directly using the raw
-// Web Push API which is what iOS Safari/PWA natively supports.
-// ============================================================
+importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
 
-// ─── Background Push Handler (Raw Web Push API) ─────────────
-self.addEventListener('push', (event) => {
-  if (!event.data) {
-    console.log('[SW] Push received but no data.');
-    return;
-  }
-
-  let payload;
-  try {
-    payload = event.data.json();
-  } catch (e) {
-    payload = { notification: { title: 'Dienste-Chat', body: event.data.text() } };
-  }
-
-  // FCM sends the notification under the top-level 'notification' key
-  const notification = payload.notification || {};
-  const data = payload.data || {};
-
-  const title = notification.title || 'Dienste-Chat';
-  const options = {
-    body: notification.body || 'Neuer Beitrag',
-    icon: 'https://lateina.github.io/Hausdienstchat/icon_tight_192.png',
-    badge: 'https://lateina.github.io/Hausdienstchat/icon_tight_192.png',
-    data: data,
-    tag: data.postId || 'default', // Prevents duplicate notifications
-    renotify: true,
-  };
-
-  console.log('[SW] Showing notification:', title, options);
-  event.waitUntil(self.registration.showNotification(title, options));
+firebase.initializeApp({
+  apiKey: "AIzaSyCKOZlEu5QaQ8ISjFmNFFp5AXqypjJ9VCc",
+  authDomain: "dienste-chat.firebaseapp.com",
+  projectId: "dienste-chat",
+  storageBucket: "dienste-chat.firebasestorage.app",
+  messagingSenderId: "25445990011",
+  appId: "1:25445990011:web:993bfdd9b93502653a6cde"
 });
 
-// ─── Notification Click Handler ──────────────────────────────
+const messaging = firebase.messaging();
+
+// ─── IMPORTANT: No onBackgroundMessage() registered ──────────────────────────
+// When the FCM payload contains a top-level 'notification' object AND
+// onBackgroundMessage is NOT registered, the Firebase SDK shows the
+// notification automatically (native browser/OS handling).
+// This is the most reliable path for iOS PWA background notifications.
+// Registering onBackgroundMessage() — even with an empty body — would
+// intercept and suppress the automatic display on many iOS versions.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── Notification Click Handler ──────────────────────────────────────────────
 self.addEventListener('notificationclick', (event) => {
   console.log('[SW] Notification click received.', event.notification.data);
   event.notification.close();
@@ -67,8 +45,8 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// ─── PWA Caching (Cache-First with Network Fallback) ─────────
-const CACHE_NAME = 'dienste-chat-v7';
+// ─── PWA Caching ─────────────────────────────────────────────────────────────
+const CACHE_NAME = 'dienste-chat-v8';
 const ASSETS = [
   './index.html',
   './manifest.json',
