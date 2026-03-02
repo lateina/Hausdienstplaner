@@ -89,8 +89,23 @@ exports.onNewPost = onDocumentCreated({
                 return;
             }
 
+            // Special case: 'admin' UID is always an administrator
+            if (mitarbeiterId === 'admin') {
+                console.log(`DEBUG: Admin token found, always sending.`);
+                relevantTokens.push(token);
+                return;
+            }
+
             // Find employee in JSONBin list to get their role and name
-            const employee = employees.find(e => String(e.id || e.mitarbeiter_id) === String(mitarbeiterId));
+            // Try exact match first, then numeric fallback (e.g. 'emp_00004' → '4')
+            let employee = employees.find(e => String(e.id || e.mitarbeiter_id) === String(mitarbeiterId));
+            if (!employee) {
+                // Try extracting numeric part from IDs like 'emp_00004' → 4
+                const numericId = parseInt(mitarbeiterId.replace(/\D/g, ''), 10);
+                if (!isNaN(numericId)) {
+                    employee = employees.find(e => parseInt(e.id || e.mitarbeiter_id, 10) === numericId);
+                }
+            }
             if (!employee) {
                 console.log(`DEBUG: Employee not found in JSONBin for token of UID ${mitarbeiterId}`);
                 return;
