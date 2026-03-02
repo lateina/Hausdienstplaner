@@ -1460,7 +1460,6 @@
             try {
                 const docRef = await db.collection("posts").add(newPost);
                 console.log("Dienste-Chat: Post successfully saved with ID:", docRef.id);
-                alert("Beitrag erfolgreich veröffentlicht!");
                 document.getElementById('post-title-input').value = '';
                 document.getElementById('post-body-input').value = '';
                 closeModal();
