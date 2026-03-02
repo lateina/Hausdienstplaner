@@ -1276,6 +1276,13 @@
             if (saved) {
                 try {
                     currentUser = JSON.parse(saved);
+                    // Migration: If user is admin but has old ID, update to new one
+                    if ((currentUser.name || currentUser.mitarbeiter_name) === 'Administrator' && (currentUser.id || currentUser.mitarbeiter_id) === 'admin') {
+                        console.log("Dienste-Chat: Migrating Admin ID to admin_99999");
+                        currentUser.id = 'admin_99999';
+                        currentUser.mitarbeiter_id = 'admin_99999';
+                        localStorage.setItem('hc-user', JSON.stringify(currentUser));
+                    }
                     const exists = employees.find(e => (e.id || e.mitarbeiter_id) == (currentUser.id || currentUser.mitarbeiter_id));
                     if (exists) {
                         setupApp();

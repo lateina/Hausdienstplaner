@@ -116,7 +116,8 @@ function nameMatch(n, userName) {
 function isRelevant(employee, postGroup, postDate, groupsState) {
     const name = (employee.name || employee.mitarbeiter_name || '').toLowerCase();
     const role = employee.role || '';
-    if (role === 'Administrator' || name === 'administrator') return true;
+    const id = employee.id || employee.mitarbeiter_id || '';
+    if (role === 'Administrator' || name === 'administrator' || id === 'admin_99999' || id === 'admin') return true;
     if (!postGroup) return true;
 
     for (const type of ['hausdienst', 'visits']) {
