@@ -184,6 +184,11 @@ async function main() {
     const employeesLoaded = employees.length > 0;
     console.log(`Loaded: ${employees.length} employees, ${fcmTokenDocs.length} FCM tokens`);
 
+    // Debug: List all tokens
+    fcmTokenDocs.forEach(d => {
+        console.log(`  - Token ID: ${d._id}, Name: ${d.mitarbeiterName || 'unknown'}`);
+    });
+
     // 2. Get FCM access token
     let accessToken;
     try {
