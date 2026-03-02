@@ -15,8 +15,19 @@ const messaging = firebase.messaging();
 // ─── Background Messaging ────────────────────────────────────────────────────
 messaging.onBackgroundMessage((payload) => {
   console.log('[SW] Background message received:', payload);
-  // Customize notification here if needed. 
-  // For iOS, the top-level 'notification' in the payload usually suffices.
+
+  if (payload.notification) {
+    const notificationTitle = payload.notification.title;
+    const notificationOptions = {
+      body: payload.notification.body,
+      icon: payload.notification.icon || payload.notification.image || './icon_tight_192.png',
+      badge: './icon_tight_192.png',
+      data: payload.data,
+      tag: payload.data ? payload.data.postId : undefined
+    };
+
+    return self.registration.showNotification(notificationTitle, notificationOptions);
+  }
 });
 
 // ─── Notification Click Handler ──────────────────────────────────────────────
@@ -44,7 +55,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ─── PWA Caching ─────────────────────────────────────────────────────────────
-const CACHE_NAME = 'dienste-chat-v11';
+const CACHE_NAME = 'dienste-chat-v12';
 const ASSETS = [
   './index.html',
   './manifest.json',
