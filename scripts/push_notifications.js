@@ -195,14 +195,6 @@ async function main() {
 
     // 3. Find new posts that haven't been notified yet
     const newPosts = posts.filter(p => {
-        const isNotified = !!p.notifiedAt;
-        const hasCreatedAt = !!p.createdAt;
-        const isRecent = p.createdAt > cutoff;
-
-        if (isNotified || !isRecent) {
-            console.log(`  - Post "${p.title}" (ID: ${p._id}): notifiedAt=${p.notifiedAt}, createdAt=${p.createdAt}, recent=${isRecent}`);
-        }
-
         if (p.notifiedAt) return false; // Already notified
         if (!p.createdAt) return false;
         return p.createdAt > cutoff;
