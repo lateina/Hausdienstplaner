@@ -9,7 +9,7 @@ const DIST_BIN_ID = process.env.DIST_BIN_ID;
 const VISITS_BIN_ID = process.env.VISITS_BIN_ID;
 
 // How far back to look for new posts (in minutes)
-const LOOKBACK_MINUTES = 10;
+const LOOKBACK_MINUTES = 1440; // 24 hours
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
