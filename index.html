@@ -1164,7 +1164,7 @@
 
                 alert('Benachrichtigungen wurden aktiviert!');
             } else if (permission === 'denied') {
-                alert('Benachrichtigungen wurden abgelehnt. Du kannst dies in den Browser-Einstellungen ändern.');
+                alert('Benachrichtigungen sind blockiert. \n\nUm diese zu aktivieren: \n1. Klicke auf das Schloss-Symbol neben der URL. \n2. Stelle "Benachrichtigungen" auf "Ein" oder "Erlauben". \n3. Lade die Seite neu.');
             } else {
                 console.log("Permission status:", permission);
             }
