@@ -15,10 +15,12 @@ exports.onNewPost = onDocumentCreated("posts/{postId}", async (event) => {
 
     // 1. Get all registered FCM tokens
     const tokensSnapshot = await db.collection("fcm_tokens").get();
-    const tokens = [];
+    const allTokens = [];
     tokensSnapshot.forEach(doc => {
-        if (doc.data().token) tokens.push(doc.data().token);
+        if (doc.data().token) allTokens.push(doc.data().token);
     });
+
+    const tokens = [...new Set(allTokens)];
 
     if (tokens.length === 0) {
         console.log("No FCM tokens found.");

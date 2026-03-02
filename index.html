@@ -1275,6 +1275,13 @@
             console.log("Dienste-Chat: notifyNewPost", post.id, isReply);
             if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
+            // Only show local notification if app is in foreground and visible.
+            // If backgrounded/hidden, FCM (sw.js) handles it to avoid duplicates.
+            if (document.visibilityState !== 'visible') {
+                console.log("Dienste-Chat: App hidden, skipping local notification (FCM should handle it).");
+                return;
+            }
+
             const group = post.tags && post.tags[0] ? ` (${post.tags[0]})` : '';
             let title = `${post.authorName}${group}`;
             let body = post.title;
