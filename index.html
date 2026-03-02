@@ -927,7 +927,12 @@
                 if (Notification.permission === 'granted' && currentUser) {
                     try {
                         const VAPID_KEY = "BIvQOoeTmwhxDnBipwDnHEfd4HFWVWh_7ahgbToW3r63vvyz8lnaY69TxMMG9wM1R4Y2E6irDpKSaK9rtB2XNuc";
-                        const token = await messaging.getToken({ vapidKey: VAPID_KEY });
+
+                        const registration = await navigator.serviceWorker.ready;
+                        const token = await messaging.getToken({
+                            vapidKey: VAPID_KEY,
+                            serviceWorkerRegistration: registration
+                        });
                         if (token) await saveFcmToken(token);
                     } catch (err) {
                         console.error("Dienste-Chat: Auto FCM Token Error:", err);
@@ -1074,7 +1079,13 @@
                     // FCM Token registration
                     try {
                         const VAPID_KEY = "BIvQOoeTmwhxDnBipwDnHEfd4HFWVWh_7ahgbToW3r63vvyz8lnaY69TxMMG9wM1R4Y2E6irDpKSaK9rtB2XNuc";
-                        const token = await messaging.getToken({ vapidKey: VAPID_KEY });
+
+                        // Wait for SW to be ready
+                        const registration = await navigator.serviceWorker.ready;
+                        const token = await messaging.getToken({
+                            vapidKey: VAPID_KEY,
+                            serviceWorkerRegistration: registration
+                        });
                         if (token) {
                             console.log("Dienste-Chat: FCM Token received:", token);
                             await saveFcmToken(token);
