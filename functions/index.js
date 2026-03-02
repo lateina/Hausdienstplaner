@@ -133,15 +133,24 @@ exports.onNewPost = onDocumentCreated({
             for (const type of ['hausdienst', 'visits']) {
                 const state = groupsState[type];
                 // Handle different JSON structures (assignments, distributions, or flat record)
-                let distributions = state.assignments || state.distributions || (state.record ? (state.record.assignments || state.record) : state) || {};
+                let distributions = {};
+                let foundMonth = null;
 
                 if (postDate) {
                     const dateObj = new Date(postDate);
                     const monatId = `month_${dateObj.getFullYear()}_${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
-                    const month = (state.months || []).find(m => m.monat_id === monatId);
-                    if (month && (month.distributions || month.assignments)) {
-                        distributions = month.distributions || month.assignments;
-                    }
+                    foundMonth = (state.months || []).find(m => m.monat_id === monatId);
+                }
+
+                // Fallback: use latest month if no specific match
+                if (!foundMonth && Array.isArray(state.months) && state.months.length > 0) {
+                    foundMonth = state.months[state.months.length - 1];
+                }
+
+                if (foundMonth) {
+                    distributions = foundMonth.distributions || foundMonth.assignments || {};
+                } else {
+                    distributions = state.assignments || state.distributions || (state.record ? (state.record.assignments || state.record) : state) || {};
                 }
 
                 const reverseLabels = { 'Station 46': 'visite_46', 'Station 18': 'visite_18', 'Station 19': 'visite_19' };
