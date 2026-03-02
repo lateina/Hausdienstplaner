@@ -76,6 +76,7 @@ exports.onNewPost = onDocumentCreated({
         }
 
         const employeesLoaded = employees.length > 0;
+        const relevantTokens = [];
 
         // 3. Filtering logic (Server-side replication of isUserInDienstGroup)
         tokensSnapshot.forEach(doc => {
