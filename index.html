@@ -1568,6 +1568,7 @@
                         <span class="action-link" onclick="openReplyModal('${post.id}')">Antworten</span>
                         ${isAdmin || String(post.mitarbeiterId || post.authorId) === String(currentUser.id || currentUser.mitarbeiter_id) ? `
                             <span class="action-link" style="color: #059669" onclick="sharePost('${post.id}')">WhatsApp</span>
+                            <span class="action-link" style="color: #6366f1" onclick="shareByEmail('${post.id}')">Email</span>
                             <span class="action-link" style="color: #d97706" onclick="togglePostDone('${post.id}')">${post.isDone ? 'Offen' : 'Erledigt'}</span>
                             <span class="action-link" style="color: #ef4444" onclick="deletePost('${post.id}')">Löschen</span>
                         ` : ''}
