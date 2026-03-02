@@ -22,7 +22,7 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
   const postId = event.notification.data ? event.notification.data.postId : null;
-  const baseUrl = 'https://lateina.github.io/Hausdienstchat/index.html';
+  const baseUrl = 'https://lateina.github.io/Hausdienstplaner/index.html';
   const urlToOpen = postId ? `${baseUrl}?post=${postId}` : baseUrl;
 
   event.waitUntil(

@@ -74,7 +74,7 @@ async function sendFcmPush(accessToken, fcmToken, title, body, postId) {
             webpush: {
                 headers: { Urgency: 'high' },
                 fcm_options: {
-                    link: `https://lateina.github.io/Hausdienstchat/index.html?post=${postId}`
+                    link: `https://lateina.github.io/Hausdienstplaner/index.html?post=${postId}`
                 }
             }
         }

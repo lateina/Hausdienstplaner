@@ -226,7 +226,7 @@ exports.onNewPost = onDocumentCreated({
                     TTL: "0" // Immediate delivery
                 },
                 fcm_options: {
-                    link: `https://lateina.github.io/Hausdienstchat/index.html?post=${postId}`
+                    link: `https://lateina.github.io/Hausdienstplaner/index.html?post=${postId}`
                 }
             },
             tokens: tokensToSend,
