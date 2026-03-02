@@ -75,13 +75,19 @@ exports.onNewPost = onDocumentCreated({
             return null;
         }
 
-        const relevantTokens = [];
+        const employeesLoaded = employees.length > 0;
 
         // 3. Filtering logic (Server-side replication of isUserInDienstGroup)
         tokensSnapshot.forEach(doc => {
             const data = doc.data();
             const token = data.token;
-            const mitarbeiterId = doc.id; // Correct as per saveFcmToken logic in index.html (uid = mitarbeiter_id)
+            const mitarbeiterId = doc.id;
+
+            // If employee data couldn't be loaded, send to everyone (fallback)
+            if (!employeesLoaded) {
+                relevantTokens.push(token);
+                return;
+            }
 
             // Find employee in JSONBin list to get their role and name
             const employee = employees.find(e => String(e.id || e.mitarbeiter_id) === String(mitarbeiterId));
