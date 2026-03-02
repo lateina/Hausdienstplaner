@@ -41,8 +41,8 @@ exports.onNewPost = onDocumentCreated({
         // Structure similar to groupsState in index.html
         const employees = Array.isArray(empData.record) ? empData.record : (empData.record.employees || []);
         const groupsState = {
-            hausdienst: distData.record,
-            visits: visitData.record
+            hausdienst: distData.record || {},
+            visits: visitData.record || {}
         };
 
         // 2. Get all registered FCM tokens
@@ -87,7 +87,8 @@ exports.onNewPost = onDocumentCreated({
             let isRelevant = false;
             for (const type of ['hausdienst', 'visits']) {
                 const state = groupsState[type];
-                let distributions = state.distributions || {};
+                // Handle different JSON structures (assignments, distributions, or flat record)
+                let distributions = state.assignments || state.distributions || (state.record ? (state.record.assignments || state.record) : state) || {};
 
                 if (postDate) {
                     const dateObj = new Date(postDate);
@@ -99,6 +100,9 @@ exports.onNewPost = onDocumentCreated({
                 }
 
                 const reverseLabels = { 'Station 46': 'visite_46', 'Station 18': 'visite_18', 'Station 19': 'visite_19' };
+                let searchKey = postGroup;
+                if (reverseLabels[postGroup]) searchKey = reverseLabels[postGroup];
+
                 const nameCheck = (n) => {
                     if (!n) return false;
                     // Robust Matching (ID fallback)
@@ -121,7 +125,11 @@ exports.onNewPost = onDocumentCreated({
                 const assigned = distributions[searchKey];
                 if (assigned) {
                     const names = Array.isArray(assigned) ? assigned : [assigned];
-                    if (names.some(nameCheck)) { isRelevant = true; break; }
+                    if (names.some(nameCheck)) {
+                        console.log(`DEBUG: Match found for ${name} in ${searchKey}`);
+                        isRelevant = true;
+                        break;
+                    }
                 }
                 const pool = distributions['pool'];
                 if (pool) {
@@ -131,7 +139,11 @@ exports.onNewPost = onDocumentCreated({
                             hausdienst: ['1. Hausdienst', '2. Hausdienst', '3. Hausdienst', 'Echo-Hintergrund', 'Broncho-Hintergrund', 'Kardio-Hintergrund'],
                             visits: ['Station 46', 'Station 18', 'Station 19']
                         };
-                        if ((catGroups[type] || []).includes(postGroup)) { isRelevant = true; break; }
+                        if ((catGroups[type] || []).includes(postGroup)) {
+                            console.log(`DEBUG: Match found for ${name} via pool in ${postGroup}`);
+                            isRelevant = true;
+                            break;
+                        }
                     }
                 }
             }
