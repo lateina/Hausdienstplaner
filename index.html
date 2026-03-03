@@ -1797,17 +1797,16 @@
                         <span class="timestamp">
                             ${new Date(post.createdAt).toLocaleString('de-DE')}
                             ${post.readBy && post.readBy.length > 0 ? `
-                                <span style="color: #34b7f1; margin-left: 4px; font-size: 0.9rem; cursor: pointer;" data-reads="${encodeURIComponent(JSON.stringify([...new Set(post.readBy)]))}" onclick="showReadByPopup(this.dataset.reads)">
+                                <span style="color: #34b7f1; margin-left: 8px; font-size: 0.9rem; cursor: pointer; padding: 10px 5px; margin: -10px -5px; display: inline-flex; align-items: center; justify-content: center;" data-reads="${encodeURIComponent(JSON.stringify([...new Set(post.readBy)]))}" onclick="showReadByPopup(this.dataset.reads)">
                                     <svg width="22" height="11" viewBox="0 0 22 11" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
                                         <path d="M4.5 9.5L1 6L2.4 4.6L4.5 6.7L9.1 2.1L10.5 3.5L4.5 9.5Z" fill="currentColor"/>
                                         <path d="M10.5 9.5L7 6L8.4 4.6L10.5 6.7L15.1 2.1L16.5 3.5L10.5 9.5Z" fill="currentColor"/>
                                     </svg>
                                 </span>
                             ` : post.notifiedAt ? `
-                                <span style="color: #34b7f1; margin-left: 4px; font-size: 0.9rem;">
-                                    <svg width="16" height="11" viewBox="0 0 16 11" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
+                                <span style="color: #34b7f1; margin-left: 8px; font-size: 0.9rem; display: inline-flex; align-items: center;">
+                                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
                                         <path d="M4.5 9.5L1 6L2.4 4.6L4.5 6.7L9.1 2.1L10.5 3.5L4.5 9.5Z" fill="currentColor"/>
-                                        <path d="M9.5 9.5L6 6L7.4 4.6L9.5 6.7L14.1 2.1L15.5 3.5L9.5 9.5Z" fill="currentColor" opacity="0.8"/>
                                     </svg>
                                 </span>
                             ` : ''}
@@ -1818,17 +1817,16 @@
                         <div data-read-post="${post.id}" data-read-reply="${r.id}" style="border-left: 2px solid #e2e8f0; padding-left: 8px; margin-top: 8px; position: relative;">
                             <b>${r.authorName}:</b> ${r.body}
                             ${r.readBy && r.readBy.length > 0 ? `
-                                <span style="color: #34b7f1; font-size: 0.9rem; margin-left: 4px; cursor: pointer;" data-reads="${encodeURIComponent(JSON.stringify([...new Set(r.readBy)]))}" onclick="showReadByPopup(this.dataset.reads)">
+                                <span style="color: #34b7f1; font-size: 0.9rem; margin-left: 8px; cursor: pointer; padding: 10px 5px; margin: -10px -5px; display: inline-flex; align-items: center; justify-content: center;" data-reads="${encodeURIComponent(JSON.stringify([...new Set(r.readBy)]))}" onclick="showReadByPopup(this.dataset.reads)">
                                     <svg width="20" height="10" viewBox="0 0 22 11" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: baseline;">
                                         <path d="M4.5 9.5L1 6L2.4 4.6L4.5 6.7L9.1 2.1L10.5 3.5L4.5 9.5Z" fill="currentColor"/>
                                         <path d="M10.5 9.5L7 6L8.4 4.6L10.5 6.7L15.1 2.1L16.5 3.5L10.5 9.5Z" fill="currentColor"/>
                                     </svg>
                                 </span>
                             ` : r.notifiedAt ? `
-                                <span style="color: #34b7f1; font-size: 0.9rem; margin-left: 4px;">
-                                    <svg width="14" height="10" viewBox="0 0 16 11" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: baseline;">
+                                <span style="color: #34b7f1; font-size: 0.9rem; margin-left: 8px; display: inline-flex; align-items: baseline;">
+                                    <svg width="10" height="10" viewBox="0 0 16 11" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: baseline;">
                                         <path d="M4.5 9.5L1 6L2.4 4.6L4.5 6.7L9.1 2.1L10.5 3.5L4.5 9.5Z" fill="currentColor"/>
-                                        <path d="M9.5 9.5L6 6L7.4 4.6L9.5 6.7L14.1 2.1L15.5 3.5L9.5 9.5Z" fill="currentColor" opacity="0.8"/>
                                     </svg>
                                 </span>
                             ` : ''}

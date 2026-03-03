@@ -450,17 +450,19 @@ async function main() {
                 // Firestore API expects arrays to have "arrayValue" with "values". firestorePatch currently handles scalar fields easily but arrays need care.
                 // However, firestorePatch helper only handles strings and booleans. Let's send a raw fetch for the array update.
 
-                const arrayValues = updatedReplies.map(r => ({
-                    mapValue: {
-                        fields: {
-                            id: { stringValue: r.id || '' },
-                            authorName: { stringValue: r.authorName || '' },
-                            body: { stringValue: r.body || '' },
-                            createdAt: { stringValue: r.createdAt || '' },
-                            ...(r.notifiedAt ? { notifiedAt: { stringValue: r.notifiedAt } } : {})
-                        }
+                const arrayValues = updatedReplies.map(r => {
+                    const fields = {};
+                    // Map existing fields to Firestore types
+                    for (const [k, v] of Object.entries(r)) {
+                        if (k === '_id' || k === '_ref') continue;
+                        if (typeof v === 'string') fields[k] = { stringValue: v };
+                        else if (typeof v === 'boolean') fields[k] = { booleanValue: v };
+                        else if (typeof v === 'number') fields[k] = { integerValue: String(v) };
+                        else if (Array.isArray(v)) fields[k] = { arrayValue: { values: v.map(item => ({ stringValue: String(item) })) } };
+                        else if (v && typeof v === 'object' && v.seconds) fields[k] = { timestampValue: new Date(v.seconds * 1000).toISOString() };
                     }
-                }));
+                    return { mapValue: { fields } };
+                });
 
                 const updateUrl = `https://firestore.googleapis.com/v1/${post._ref}?updateMask.fieldPaths=replies`;
                 const updateBody = {
