@@ -245,25 +245,57 @@ async function main() {
         process.exit(1);
     }
 
-    // 3. Find new posts that haven't been notified yet
-    const newPosts = posts.filter(p => {
-        if (p.notifiedAt) return false; // Already notified
-        if (p.isDone) return false;       // Filter out finished posts
-        if (!p.createdAt) return false;
-        return p.createdAt > cutoff;
+    // 3. Find new posts and new replies that haven't been notified yet
+    const itemsToNotify = [];
+    posts.forEach(p => {
+        if (p.isDone) return; // Skip finished posts
+        if (!p.createdAt) return;
+
+        // Check the main post
+        if (!p.notifiedAt && p.createdAt > cutoff) {
+            itemsToNotify.push({
+                type: 'post',
+                post: p,
+                id: p._id,
+                authorId: String(p.mitarbeiterId || p.authorId || ''),
+                authorName: p.authorName || '',
+                group: p.tags && p.tags[0] ? p.tags[0] : null,
+                date: p.targetDate || null,
+                title: p.title || '',
+                body: p.body || ''
+            });
+        }
+
+        // Check replies
+        if (p.replies && Array.isArray(p.replies)) {
+            p.replies.forEach((r, idx) => {
+                if (!r.notifiedAt && r.createdAt && r.createdAt > cutoff) {
+                    itemsToNotify.push({
+                        type: 'reply',
+                        post: p,
+                        replyIndex: idx,
+                        id: r.id || `${p._id}-reply-${idx}`,
+                        authorId: '', // Replies currently don't store authorId, only authorName. Post author/admin will be notified.
+                        authorName: r.authorName || '',
+                        group: p.tags && p.tags[0] ? p.tags[0] : null,
+                        date: p.targetDate || null,
+                        title: p.title || '',
+                        body: r.body || ''
+                    });
+                }
+            });
+        }
     });
 
-    console.log(`Found ${newPosts.length} new posts to process.`);
+    console.log(`Found ${itemsToNotify.length} new items (posts/replies) to process.`);
     let totalSent = 0;
 
-    for (const post of newPosts) {
+    for (const item of itemsToNotify) {
+        const { type, post, replyIndex, id, authorId, authorName, group, date, title, body } = item;
         const postId = post._id;
-        const postGroup = post.tags && post.tags[0] ? post.tags[0] : null;
-        const postDate = post.targetDate || null;
-        const authorName = post.authorName || '';
-        const authorId = String(post.mitarbeiterId || post.authorId || '');
 
-        console.log(`\nProcessing: "${post.title}" by ${authorName} (Group: ${postGroup})`);
+        const logTitle = type === 'reply' ? `Reply on "${title}" by ${authorName}` : `"${title}" by ${authorName}`;
+        console.log(`\nProcessing: ${logTitle} (Group: ${group})`);
 
         // Build list of relevant FCM tokens
         const relevantTokens = [];
@@ -272,42 +304,65 @@ async function main() {
             const uid = String(tokenDoc._id);
             if (!token) continue;
 
-            if (uid === authorId) {
-                console.log(`  ➡ Skipping token for UID ${uid} (Author of post)`);
-                continue;
-            }
+            // Type-specific relevance logic
+            let isUserRelevant = false;
 
-            if (uid === 'admin') {
-                console.log(`  ➡ Adding admin token for UID ${uid}`);
-                relevantTokens.push(token);
-                continue;
-            }
+            if (type === 'post') {
+                if (uid === authorId) {
+                    console.log(`  ➡ Skipping token for UID ${uid} (Author of post)`);
+                    continue;
+                }
+                if (uid === 'admin') {
+                    isUserRelevant = true;
+                } else if (!employeesLoaded) {
+                    isUserRelevant = true;
+                } else {
+                    let employee = employees.find(e => String(e.id || e.mitarbeiter_id) === uid);
+                    if (!employee) {
+                        const numericId = parseInt(uid.replace(/\D/g, ''), 10);
+                        if (!isNaN(numericId)) employee = employees.find(e => parseInt(e.id || e.mitarbeiter_id, 10) === numericId);
+                    }
+                    if (employee) {
+                        isUserRelevant = isRelevant(employee, group, date, groupsState);
+                    } else {
+                        console.warn(`  ⚠ Token UID ${uid} not found in employees list.`);
+                    }
+                }
+            } else if (type === 'reply') {
+                // For replies, notify anyone who's relevant to the post, plus the Post Author.
+                const postAuthorId = String(post.mitarbeiterId || post.authorId || '');
+                let employee = employees.find(e => String(e.id || e.mitarbeiter_id) === uid);
 
-            if (!employeesLoaded) {
-                console.log(`  ➡ Employees not loaded, adding token for UID ${uid}`);
-                relevantTokens.push(token);
-                continue;
-            }
+                if (!employee && uid !== 'admin') {
+                    const numericId = parseInt(uid.replace(/\D/g, ''), 10);
+                    if (!isNaN(numericId)) employee = employees.find(e => parseInt(e.id || e.mitarbeiter_id, 10) === numericId);
+                }
 
-            let employee = employees.find(e => String(e.id || e.mitarbeiter_id) === uid);
-            if (!employee) {
-                // Try numeric match
-                const numericId = parseInt(uid.replace(/\D/g, ''), 10);
-                if (!isNaN(numericId)) {
-                    employee = employees.find(e => parseInt(e.id || e.mitarbeiter_id, 10) === numericId);
+                const empName = employee ? (employee.name || employee.mitarbeiter_name || "") : "";
+
+                // Do not notify the person who just replied
+                if (empName === authorName) {
+                    console.log(`  ➡ Skipping token for UID ${uid} (Author of reply)`);
+                    continue;
+                }
+
+                if (uid === 'admin' || (employee && (employee.role === 'Administrator' || empName.toLowerCase() === 'administrator'))) {
+                    isUserRelevant = true;
+                } else if (uid === postAuthorId) {
+                    isUserRelevant = true;
+                } else if (!employeesLoaded) {
+                    isUserRelevant = true; // Fallback: notify everyone if employee data couldn't load
+                } else if (employee) {
+                    // Notify anyone relevant to the group, just like the main post
+                    isUserRelevant = isRelevant(employee, group, date, groupsState);
                 }
             }
 
-            if (!employee) {
-                console.warn(`  ⚠ Token UID ${uid} not found in employees list. Skipping.`);
-                continue;
-            }
-
-            console.log(`  ➡ Checking relevance for employee: ${employee.name || employee.mitarbeiter_name} (ID: ${uid})`);
-            if (isRelevant(employee, postGroup, postDate, groupsState)) {
+            if (isUserRelevant) {
+                console.log(`  ➡ Adding token for UID ${uid}`);
                 relevantTokens.push(token);
             } else {
-                console.log(`    ❌ Not relevant for this post.`);
+                // console.log(`    ❌ Not relevant for this item.`); // Optional detailed logging
             }
         }
 
@@ -316,21 +371,37 @@ async function main() {
 
         if (uniqueTokens.length === 0) {
             console.log(`  → No relevant recipients found. Skipping notification mark.`);
+            // For replies, we still want to mark them as notified even if no tokens were found (e.g. author has no app installed)
+            // to avoid reprocessing them endlessly. Posts behave the same way implicitly if no tokens match.
+            if (type === 'reply') {
+                const updatedReplies = [...post.replies];
+                updatedReplies[replyIndex].notifiedAt = new Date().toISOString();
+                await firestorePatch(post._ref, { replies: updatedReplies });
+                console.log(`  ✅ Marked reply as notified (0 tokens)`);
+            }
             continue;
         }
 
         // Build notification content
-        const preview = (post.body || '').length > 100 ? (post.body || '').substring(0, 100) + '...' : (post.body || '');
-        const notifTitle = `${authorName}${postGroup ? ` (${postGroup})` : ''}`;
-        const notifBody = post.title ? `${post.title}${preview ? `: ${preview}` : ''}` : (preview || 'Neuer Beitrag im Dienste-Chat');
+        let notifTitle = '';
+        let notifBody = '';
+
+        if (type === 'reply') {
+            notifTitle = `${authorName} (Antwort)`;
+            notifBody = `Zu: ${title}\n"${body}"`;
+        } else {
+            const preview = body.length > 100 ? body.substring(0, 100) + '...' : body;
+            notifTitle = `${authorName}${group ? ` (${group})` : ''}`;
+            notifBody = title ? `${title}${preview ? `: ${preview}` : ''}` : (preview || 'Neuer Beitrag im Dienste-Chat');
+        }
 
         // Send to each token
         const cleanupTokens = [];
-        let sentForThisPost = 0;
+        let sentForThisItem = 0;
         for (const token of uniqueTokens) {
             const result = await sendFcmPush(accessToken, token, notifTitle, notifBody, postId);
             if (result.success) {
-                sentForThisPost++;
+                sentForThisItem++;
                 totalSent++;
                 console.log(`  ✔ Sent to token ${token.substring(0, 20)}...`);
             } else {
@@ -353,10 +424,50 @@ async function main() {
             }
         }
 
-        // Mark post as notified ONLY if at least one was sent
-        if (sentForThisPost > 0) {
-            await firestorePatch(post._ref, { notifiedAt: new Date().toISOString() });
-            console.log(`  ✅ Marked as notified (${sentForThisPost} sent)`);
+        // Mark item as notified
+        if (sentForThisItem > 0) {
+            if (type === 'post') {
+                await firestorePatch(post._ref, { notifiedAt: new Date().toISOString() });
+            } else if (type === 'reply') {
+                const updatedReplies = [...post.replies];
+                updatedReplies[replyIndex].notifiedAt = new Date().toISOString();
+                // Firestore API expects arrays to have "arrayValue" with "values". firestorePatch currently handles scalar fields easily but arrays need care.
+                // However, firestorePatch helper only handles strings and booleans. Let's send a raw fetch for the array update.
+
+                const arrayValues = updatedReplies.map(r => ({
+                    mapValue: {
+                        fields: {
+                            id: { stringValue: r.id || '' },
+                            authorName: { stringValue: r.authorName || '' },
+                            body: { stringValue: r.body || '' },
+                            createdAt: { stringValue: r.createdAt || '' },
+                            ...(r.notifiedAt ? { notifiedAt: { stringValue: r.notifiedAt } } : {})
+                        }
+                    }
+                }));
+
+                const updateUrl = `https://firestore.googleapis.com/v1/${post._ref}?updateMask.fieldPaths=replies`;
+                const updateBody = {
+                    fields: {
+                        replies: {
+                            arrayValue: {
+                                values: arrayValues
+                            }
+                        }
+                    }
+                };
+
+                const updateRes = await fetch(updateUrl, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updateBody)
+                });
+
+                if (!updateRes.ok) {
+                    console.error("Failed to update reply notifiedAt:", await updateRes.text());
+                }
+            }
+            console.log(`  ✅ Marked as notified (${sentForThisItem} sent)`);
         } else {
             console.log(`  ⚠ Not marking as notified (0 successful sends)`);
         }

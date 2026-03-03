@@ -1520,6 +1520,7 @@
             if (!post) return;
 
             const updatedReplies = [...(post.replies || []), {
+                id: crypto.randomUUID(),
                 authorName: currentUser.name || currentUser.mitarbeiter_name,
                 body,
                 createdAt: new Date().toISOString()
@@ -1617,7 +1618,19 @@
                         </span>
                     </div>
                     <div class="post-body" style="margin: 12px 0;">${post.body.replace(/\n/g, '<br>')}</div>
-                    <div class="replies">${(post.replies || []).map(r => `<div style="border-left: 2px solid #e2e8f0; padding-left: 8px; margin-top: 8px;"><b>${r.authorName}:</b> ${r.body}</div>`).join('')}</div>
+                    <div class="replies">${(post.replies || []).map(r => `
+                        <div style="border-left: 2px solid #e2e8f0; padding-left: 8px; margin-top: 8px; position: relative;">
+                            <b>${r.authorName}:</b> ${r.body}
+                            ${r.notifiedAt ? `
+                                <span style="color: #34b7f1; font-size: 0.9rem; margin-left: 4px;" title="Benachrichtigung versendet">
+                                    <svg width="14" height="10" viewBox="0 0 16 11" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: baseline;">
+                                        <path d="M4.5 9.5L1 6L2.4 4.6L4.5 6.7L9.1 2.1L10.5 3.5L4.5 9.5Z" fill="currentColor"/>
+                                        <path d="M9.5 9.5L6 6L7.4 4.6L9.5 6.7L14.1 2.1L15.5 3.5L9.5 9.5Z" fill="currentColor" opacity="0.8"/>
+                                    </svg>
+                                </span>
+                            ` : ''}
+                        </div>
+                    `).join('')}</div>
                     <div class="post-actions" style="margin-top: 16px; border-top: 1px solid #f1f5f9; padding-top: 8px;">
                         <span class="action-link" onclick="openReplyModal('${post.id}')">Antworten</span>
                         ${isAdmin || String(post.mitarbeiterId || post.authorId) === String(currentUser.id || currentUser.mitarbeiter_id) ? `
