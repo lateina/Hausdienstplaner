@@ -1561,6 +1561,76 @@
             }
         }
 
+        // --- Read Receipts (IntersectionObserver) ---
+        const pendingReadUpdates = new Map(); // post._ref -> { postName, replyId }
+
+        async function markItemAsRead(postId, replyId = null) {
+            if (!currentUser || !currentUser.name) return;
+            const myName = currentUser.name || currentUser.mitarbeiter_name;
+            const post = posts.find(p => String(p.id) === String(postId));
+            if (!post) return;
+
+            // Determine if we need to update
+            if (replyId) {
+                const replyIndex = (post.replies || []).findIndex(r => String(r.id) === String(replyId));
+                if (replyIndex === -1) return;
+                const reply = post.replies[replyIndex];
+                if (reply.authorName === myName) return; // Don't mark own reply
+                if (reply.readBy && reply.readBy.includes(myName)) return; // Already read
+
+                const updatedReplies = [...post.replies];
+                updatedReplies[replyIndex].readBy = [...(reply.readBy || []), myName];
+
+                // Optimistic local update so we don't spam the observer
+                post.replies = updatedReplies;
+                renderPosts();
+
+                try {
+                    await db.collection("posts").doc(String(postId)).update({ replies: updatedReplies });
+                } catch (e) {
+                    console.error("Dienste-Chat: Failed to mark reply as read", e);
+                }
+            } else {
+                if (post.authorName === myName) return; // Don't mark own post
+                if (post.readBy && post.readBy.includes(myName)) return; // Already read
+
+                const updatedReadBy = [...(post.readBy || []), myName];
+
+                // Optimistic local update
+                post.readBy = updatedReadBy;
+                renderPosts();
+
+                try {
+                    await db.collection("posts").doc(String(postId)).update({ readBy: updatedReadBy });
+                } catch (e) {
+                    console.error("Dienste-Chat: Failed to mark post as read", e);
+                }
+            }
+        }
+
+        let readObserver = null;
+        function setupReadObserver() {
+            if (readObserver) readObserver.disconnect();
+
+            readObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const target = entry.target;
+                        const postId = target.getAttribute('data-read-post');
+                        const replyId = target.getAttribute('data-read-reply');
+
+                        if (postId) {
+                            markItemAsRead(postId, replyId);
+                            readObserver.unobserve(target); // Only trigger once
+                        }
+                    }
+                });
+            }, {
+                root: null,
+                threshold: 0.5 // Trigger when 50% of the message is visible
+            });
+        }
+
         // --- UI Rendering ---
         function renderPosts() {
             const container = document.getElementById('posts-container');
@@ -1584,6 +1654,8 @@
                 return;
             }
 
+            setupReadObserver();
+
             displayPosts.reverse().forEach(post => {
                 const card = document.createElement('div');
                 card.className = 'post-card';
@@ -1606,13 +1678,20 @@
                 card.innerHTML = `
                     ${post.isDone ? `<div style="background: #10b981; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; display: inline-block; margin-bottom: 8px;">✅ Erledigt</div>` : ''}
                     ${post.tags?.length ? `<div class="post-tags">${post.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : ''}
-                    <div class="post-title">${post.title}</div>
+                    <div class="post-title" data-read-post="${post.id}">${post.title}</div>
                     ${dateRange ? `<div style="color: var(--primary); font-weight: 600;">📅 ${dateRange}</div>` : ''}
                     <div class="post-header" style="border-top: 1px solid #f1f5f9; padding-top: 8px; margin-top: 8px;">
                         <span class="author">${post.authorName}</span>
                         <span class="timestamp">
                             ${new Date(post.createdAt).toLocaleString('de-DE')}
-                            ${post.notifiedAt ? `
+                            ${post.readBy && post.readBy.length > 0 ? `
+                                <span style="color: #34b7f1; margin-left: 4px; font-size: 0.9rem;" title="Gelesen von: ${[...new Set(post.readBy)].join(', ')}">
+                                    <svg width="22" height="11" viewBox="0 0 22 11" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
+                                        <path d="M4.5 9.5L1 6L2.4 4.6L4.5 6.7L9.1 2.1L10.5 3.5L4.5 9.5Z" fill="currentColor"/>
+                                        <path d="M10.5 9.5L7 6L8.4 4.6L10.5 6.7L15.1 2.1L16.5 3.5L10.5 9.5Z" fill="currentColor"/>
+                                    </svg>
+                                </span>
+                            ` : post.notifiedAt ? `
                                 <span style="color: #34b7f1; margin-left: 4px; font-size: 0.9rem;" title="Benachrichtigung versendet">
                                     <svg width="16" height="11" viewBox="0 0 16 11" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
                                         <path d="M4.5 9.5L1 6L2.4 4.6L4.5 6.7L9.1 2.1L10.5 3.5L4.5 9.5Z" fill="currentColor"/>
@@ -1624,9 +1703,16 @@
                     </div>
                     <div class="post-body" style="margin: 12px 0;">${post.body.replace(/\n/g, '<br>')}</div>
                     <div class="replies">${(post.replies || []).map(r => `
-                        <div style="border-left: 2px solid #e2e8f0; padding-left: 8px; margin-top: 8px; position: relative;">
+                        <div data-read-post="${post.id}" data-read-reply="${r.id}" style="border-left: 2px solid #e2e8f0; padding-left: 8px; margin-top: 8px; position: relative;">
                             <b>${r.authorName}:</b> ${r.body}
-                            ${r.notifiedAt ? `
+                            ${r.readBy && r.readBy.length > 0 ? `
+                                <span style="color: #34b7f1; font-size: 0.9rem; margin-left: 4px;" title="Gelesen von: ${[...new Set(r.readBy)].join(', ')}">
+                                    <svg width="20" height="10" viewBox="0 0 22 11" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: baseline;">
+                                        <path d="M4.5 9.5L1 6L2.4 4.6L4.5 6.7L9.1 2.1L10.5 3.5L4.5 9.5Z" fill="currentColor"/>
+                                        <path d="M10.5 9.5L7 6L8.4 4.6L10.5 6.7L15.1 2.1L16.5 3.5L10.5 9.5Z" fill="currentColor"/>
+                                    </svg>
+                                </span>
+                            ` : r.notifiedAt ? `
                                 <span style="color: #34b7f1; font-size: 0.9rem; margin-left: 4px;" title="Benachrichtigung versendet">
                                     <svg width="14" height="10" viewBox="0 0 16 11" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: baseline;">
                                         <path d="M4.5 9.5L1 6L2.4 4.6L4.5 6.7L9.1 2.1L10.5 3.5L4.5 9.5Z" fill="currentColor"/>
@@ -1647,6 +1733,12 @@
                     </div>
                 `;
                 container.appendChild(card);
+
+                // Observe elements for read receipts
+                const titleEl = card.querySelector('.post-title');
+                if (titleEl) readObserver.observe(titleEl);
+                const replyEls = card.querySelectorAll('.replies > div[data-read-reply]');
+                replyEls.forEach(el => readObserver.observe(el));
             });
         }
 
