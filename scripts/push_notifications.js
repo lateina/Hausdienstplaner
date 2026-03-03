@@ -32,15 +32,31 @@ async function firestoreGet(collection) {
     const res = await fetch(url);
     const data = await res.json();
     if (!res.ok) throw new Error(`Firestore fetch ${collection} failed: ${JSON.stringify(data)}`);
+
+    function parseValue(val) {
+        if (!val) return null;
+        if (val.stringValue !== undefined) return val.stringValue;
+        if (val.booleanValue !== undefined) return val.booleanValue;
+        if (val.integerValue !== undefined) return parseInt(val.integerValue, 10);
+        if (val.timestampValue !== undefined) return val.timestampValue;
+        if (val.mapValue !== undefined && val.mapValue.fields) {
+            const obj = {};
+            for (const [k, v] of Object.entries(val.mapValue.fields)) {
+                obj[k] = parseValue(v);
+            }
+            return obj;
+        }
+        if (val.arrayValue !== undefined) {
+            return (val.arrayValue.values || []).map(parseValue);
+        }
+        return val;
+    }
+
     return (data.documents || []).map(doc => {
         const fields = doc.fields || {};
         const obj = { _id: doc.name.split('/').pop(), _ref: doc.name };
         for (const [key, val] of Object.entries(fields)) {
-            if (val.stringValue !== undefined) obj[key] = val.stringValue;
-            else if (val.booleanValue !== undefined) obj[key] = val.booleanValue;
-            else if (val.timestampValue !== undefined) obj[key] = val.timestampValue;
-            else if (val.arrayValue !== undefined) obj[key] = (val.arrayValue.values || []).map(v => v.stringValue || v);
-            else if (val.integerValue !== undefined) obj[key] = parseInt(val.integerValue, 10);
+            obj[key] = parseValue(val);
         }
         return obj;
     });
