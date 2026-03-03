@@ -71,6 +71,10 @@ async function sendFcmPush(accessToken, fcmToken, title, body, postId) {
     const message = {
         message: {
             token: fcmToken,
+            notification: {
+                title: title,
+                body: body
+            },
             data: {
                 postId: String(postId),
                 type: 'new_post',
