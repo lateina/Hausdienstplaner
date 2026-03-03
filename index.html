@@ -1477,9 +1477,9 @@
             };
         }
 
-        function showReadByPopup(namesArrayStr) {
+        function showReadByPopup(encodedStr) {
             try {
-                const names = JSON.parse(namesArrayStr);
+                const names = JSON.parse(decodeURIComponent(encodedStr));
                 const listEl = document.getElementById('read-by-list');
                 listEl.innerHTML = names.map(n => `<li style="padding: 8px 0; border-bottom: 1px solid #eee;">${n}</li>`).join('');
                 document.getElementById('read-by-overlay').style.display = 'flex';
@@ -1779,7 +1779,7 @@
                         <span class="timestamp">
                             ${new Date(post.createdAt).toLocaleString('de-DE')}
                             ${post.readBy && post.readBy.length > 0 ? `
-                                <span style="color: #34b7f1; margin-left: 4px; font-size: 0.9rem; cursor: pointer;" onclick="showReadByPopup('${JSON.stringify([...new Set(post.readBy)]).replace(/'/g, "\\'")}')">
+                                <span style="color: #34b7f1; margin-left: 4px; font-size: 0.9rem; cursor: pointer;" data-reads="${encodeURIComponent(JSON.stringify([...new Set(post.readBy)]))}" onclick="showReadByPopup(this.dataset.reads)">
                                     <svg width="22" height="11" viewBox="0 0 22 11" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
                                         <path d="M4.5 9.5L1 6L2.4 4.6L4.5 6.7L9.1 2.1L10.5 3.5L4.5 9.5Z" fill="currentColor"/>
                                         <path d="M10.5 9.5L7 6L8.4 4.6L10.5 6.7L15.1 2.1L16.5 3.5L10.5 9.5Z" fill="currentColor"/>
@@ -1800,7 +1800,7 @@
                         <div data-read-post="${post.id}" data-read-reply="${r.id}" style="border-left: 2px solid #e2e8f0; padding-left: 8px; margin-top: 8px; position: relative;">
                             <b>${r.authorName}:</b> ${r.body}
                             ${r.readBy && r.readBy.length > 0 ? `
-                                <span style="color: #34b7f1; font-size: 0.9rem; margin-left: 4px; cursor: pointer;" onclick="showReadByPopup('${JSON.stringify([...new Set(r.readBy)]).replace(/'/g, "\\'")}')">
+                                <span style="color: #34b7f1; font-size: 0.9rem; margin-left: 4px; cursor: pointer;" data-reads="${encodeURIComponent(JSON.stringify([...new Set(r.readBy)]))}" onclick="showReadByPopup(this.dataset.reads)">
                                     <svg width="20" height="10" viewBox="0 0 22 11" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: baseline;">
                                         <path d="M4.5 9.5L1 6L2.4 4.6L4.5 6.7L9.1 2.1L10.5 3.5L4.5 9.5Z" fill="currentColor"/>
                                         <path d="M10.5 9.5L7 6L8.4 4.6L10.5 6.7L15.1 2.1L16.5 3.5L10.5 9.5Z" fill="currentColor"/>
