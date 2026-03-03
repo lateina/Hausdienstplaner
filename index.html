@@ -1269,22 +1269,32 @@
             }
         }
 
-        function checkIosPrompt() {
+        function checkPwaPrompts() {
             const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
-            const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator.standalone) ||
-                window.matchMedia('(display-mode: standalone)').matches;
-            if (isIos && !isInStandaloneMode && !localStorage.getItem('hc-ios-prompt-dismissed')) {
-                setTimeout(() => { const el = document.getElementById('ios-prompt'); if (el) el.classList.add('show'); }, 2000);
-            }
-        }
+            const isInStandaloneMode = (window.navigator.standalone) || window.matchMedia('(display-mode: standalone)').matches;
 
-        function checkInstalledPrompt() {
-            const isStandalone = ('standalone' in window.navigator) && (window.navigator.standalone) ||
-                window.matchMedia('(display-mode: standalone)').matches;
-            if (isStandalone) {
+            if (isInStandaloneMode) {
                 localStorage.setItem('hc-pwa-installed', 'true');
-            } else if (localStorage.getItem('hc-pwa-installed') === 'true' && !localStorage.getItem('hc-installed-prompt-dismissed')) {
-                setTimeout(() => { const el = document.getElementById('installed-prompt'); if (el) el.classList.add('show'); }, 1500);
+                return;
+            }
+
+            // If not in standalone mode (browsing via Safari/Chrome)
+            const alreadyInstalled = localStorage.getItem('hc-pwa-installed') === 'true';
+
+            if (alreadyInstalled) {
+                // Show "App is installed" suggestion
+                if (!localStorage.getItem('hc-installed-prompt-dismissed')) {
+                    setTimeout(() => {
+                        const el = document.getElementById('installed-prompt');
+                        if (el) el.classList.add('show');
+                    }, 1500);
+                }
+            } else if (isIos && !localStorage.getItem('hc-ios-prompt-dismissed')) {
+                // Show iOS install instructions
+                setTimeout(() => {
+                    const el = document.getElementById('ios-prompt');
+                    if (el) el.classList.add('show');
+                }, 2000);
             }
         }
 
@@ -2040,8 +2050,7 @@
                 });
             }
             init();
-            checkIosPrompt();
-            checkInstalledPrompt();
+            checkPwaPrompts();
 
             // Auto-refresh groups - Updated: 2026-03-01 22:40
             setInterval(() => { if (currentUser) { loadGroups('hausdienst', CONFIG.DISTRIBUTION_BIN); loadGroups('visits', CONFIG.VISITS_BIN); } }, 300000);
