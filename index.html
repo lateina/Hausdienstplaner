@@ -1612,6 +1612,7 @@
 
             const updatedReplies = [...(post.replies || []), {
                 id: crypto.randomUUID(),
+                mitarbeiterId: currentUser.id || currentUser.mitarbeiter_id,
                 authorName: currentUser.name || currentUser.mitarbeiter_name,
                 body,
                 createdAt: new Date().toISOString()
@@ -1653,13 +1654,15 @@
         async function markItemAsRead(postId, replyId = null) {
             if (!currentUser || !currentUser.name) return;
             const myName = currentUser.name || currentUser.mitarbeiter_name;
+            const myId = String(currentUser.id || currentUser.mitarbeiter_id);
             const post = posts.find(p => String(p.id) === String(postId));
             if (!post) return;
 
             // Check if user is relevant for this post (Admin or assigned to the group)
             const isAdmin = isCurrentUserAdmin();
             const group = post.tags && post.tags[0];
-            const isRelevant = isAdmin || (group && isUserInDienstGroup(group, post.targetDate)) || String(post.mitarbeiterId || post.authorId) === String(currentUser.id || currentUser.mitarbeiter_id);
+            const isPostAuthor = String(post.mitarbeiterId || post.authorId) === myId;
+            const isRelevant = isAdmin || (group && isUserInDienstGroup(group, post.targetDate)) || isPostAuthor;
 
             // Do not log "read by" if the user is just peacefully scrolling without being relevant
             if (!isRelevant) return;
@@ -1669,7 +1672,11 @@
                 const replyIndex = (post.replies || []).findIndex(r => String(r.id) === String(replyId));
                 if (replyIndex === -1) return;
                 const reply = post.replies[replyIndex];
-                if (reply.authorName === myName) return; // Don't mark own reply
+
+                // Don't mark own reply using strictly ID (or fallback to exact name if legacy)
+                const isReplyAuthor = reply.mitarbeiterId ? String(reply.mitarbeiterId) === myId : reply.authorName === myName;
+                if (isReplyAuthor) return;
+
                 if (reply.readBy && reply.readBy.includes(myName)) return; // Already read
 
                 const updatedReplies = [...post.replies];
@@ -1685,7 +1692,7 @@
                     console.error("Dienste-Chat: Failed to mark reply as read", e);
                 }
             } else {
-                if (post.authorName === myName) return; // Don't mark own post
+                if (isPostAuthor || post.authorName === myName) return; // Strictly check ID to prevent self-read
                 if (post.readBy && post.readBy.includes(myName)) return; // Already read
 
                 const updatedReadBy = [...(post.readBy || []), myName];
