@@ -1570,6 +1570,14 @@
             const post = posts.find(p => String(p.id) === String(postId));
             if (!post) return;
 
+            // Check if user is relevant for this post (Admin or assigned to the group)
+            const isAdmin = isCurrentUserAdmin();
+            const group = post.tags && post.tags[0];
+            const isRelevant = isAdmin || (group && isUserInDienstGroup(group, post.targetDate)) || String(post.mitarbeiterId || post.authorId) === String(currentUser.id || currentUser.mitarbeiter_id);
+
+            // Do not log "read by" if the user is just peacefully scrolling without being relevant
+            if (!isRelevant) return;
+
             // Determine if we need to update
             if (replyId) {
                 const replyIndex = (post.replies || []).findIndex(r => String(r.id) === String(replyId));
