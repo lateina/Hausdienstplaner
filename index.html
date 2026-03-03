@@ -43,7 +43,6 @@
             color: var(--text-main);
             min-height: 100vh;
             min-height: -webkit-fill-available;
-            padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
             display: flex;
             flex-direction: column;
@@ -57,13 +56,9 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            /* Changed from height to min-height */
             width: 100%;
-            padding: 20px;
-            padding-left: max(20px, env(safe-area-inset-left));
-            padding-right: max(20px, env(safe-area-inset-right));
+            padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
             overflow-y: auto;
-            /* Allow scrolling on small devices if content gets too tall */
         }
 
         .dropdown-item {
@@ -172,18 +167,26 @@
             display: none;
             width: 100%;
             max-width: 1200px;
-            padding: 20px;
-            padding-left: max(20px, env(safe-area-inset-left));
-            padding-right: max(20px, env(safe-area-inset-right));
+            padding: 0 max(20px, env(safe-area-inset-right)) 20px max(20px, env(safe-area-inset-left));
             flex-grow: 1;
         }
 
         header {
+            position: sticky;
+            top: 0;
+            z-index: 2000;
+            margin: 0 calc(-1 * max(20px, env(safe-area-inset-right))) 2rem calc(-1 * max(20px, env(safe-area-inset-left)));
+            padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) 15px max(20px, env(safe-area-inset-left));
+            background: rgba(248, 250, 252, 0.85);
+            /* Frost base color */
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+
             display: flex;
             justify-content: space-between;
             align-items: center;
-            width: 100%;
-            margin-bottom: 2rem;
+            width: auto;
         }
 
         .user-info {
