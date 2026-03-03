@@ -504,6 +504,57 @@
             transform: translateX(20px);
         }
 
+        /* --- Read By Popup --- */
+        #read-by-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.2);
+            z-index: 3000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        #read-by-popup {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            width: auto;
+            min-width: 250px;
+            max-width: 90%;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            text-align: center;
+        }
+
+        #read-by-popup h3 {
+            margin: 0 0 12px 0;
+            font-size: 1rem;
+            color: var(--primary);
+        }
+
+        #read-by-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            text-align: left;
+            font-size: 0.95rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        #read-by-list li {
+            padding: 6px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        #read-by-list li:last-child {
+            border-bottom: none;
+        }
+
         /* iOS Install Prompt */
         .ios-prompt {
             position: fixed;
@@ -592,6 +643,16 @@
 </head>
 
 <body>
+
+    <!-- Read By Popup -->
+    <div id="read-by-overlay" onclick="closeReadByPopup()">
+        <div id="read-by-popup" onclick="event.stopPropagation()">
+            <h3>Gelesen von</h3>
+            <ul id="read-by-list"></ul>
+            <button class="btn btn-secondary" style="margin-top: 16px; width: 100%; border-radius: 8px; padding: 10px;"
+                onclick="closeReadByPopup()">Schließen</button>
+        </div>
+    </div>
 
     <!-- Login Screen -->
     <div id="login-screen">
@@ -1406,6 +1467,21 @@
             };
         }
 
+        function showReadByPopup(namesArrayStr) {
+            try {
+                const names = JSON.parse(namesArrayStr);
+                const listEl = document.getElementById('read-by-list');
+                listEl.innerHTML = names.map(n => `<li style="padding: 8px 0; border-bottom: 1px solid #eee;">${n}</li>`).join('');
+                document.getElementById('read-by-overlay').style.display = 'flex';
+            } catch (e) {
+                console.error("Popup error", e);
+            }
+        }
+
+        function closeReadByPopup() {
+            document.getElementById('read-by-overlay').style.display = 'none';
+        }
+
         async function refreshContent() {
             const container = document.getElementById('posts-container');
             if (!posts.length) container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Lade Einträge...</div>';
@@ -1693,14 +1769,14 @@
                         <span class="timestamp">
                             ${new Date(post.createdAt).toLocaleString('de-DE')}
                             ${post.readBy && post.readBy.length > 0 ? `
-                                <span style="color: #34b7f1; margin-left: 4px; font-size: 0.9rem;" title="Gelesen von: ${[...new Set(post.readBy)].join(', ')}">
+                                <span style="color: #34b7f1; margin-left: 4px; font-size: 0.9rem; cursor: pointer;" onclick="showReadByPopup('${JSON.stringify([...new Set(post.readBy)]).replace(/'/g, "\\'")}')">
                                     <svg width="22" height="11" viewBox="0 0 22 11" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
                                         <path d="M4.5 9.5L1 6L2.4 4.6L4.5 6.7L9.1 2.1L10.5 3.5L4.5 9.5Z" fill="currentColor"/>
                                         <path d="M10.5 9.5L7 6L8.4 4.6L10.5 6.7L15.1 2.1L16.5 3.5L10.5 9.5Z" fill="currentColor"/>
                                     </svg>
                                 </span>
                             ` : post.notifiedAt ? `
-                                <span style="color: #34b7f1; margin-left: 4px; font-size: 0.9rem;" title="Benachrichtigung versendet">
+                                <span style="color: #34b7f1; margin-left: 4px; font-size: 0.9rem;">
                                     <svg width="16" height="11" viewBox="0 0 16 11" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
                                         <path d="M4.5 9.5L1 6L2.4 4.6L4.5 6.7L9.1 2.1L10.5 3.5L4.5 9.5Z" fill="currentColor"/>
                                         <path d="M9.5 9.5L6 6L7.4 4.6L9.5 6.7L14.1 2.1L15.5 3.5L9.5 9.5Z" fill="currentColor" opacity="0.8"/>
@@ -1714,14 +1790,14 @@
                         <div data-read-post="${post.id}" data-read-reply="${r.id}" style="border-left: 2px solid #e2e8f0; padding-left: 8px; margin-top: 8px; position: relative;">
                             <b>${r.authorName}:</b> ${r.body}
                             ${r.readBy && r.readBy.length > 0 ? `
-                                <span style="color: #34b7f1; font-size: 0.9rem; margin-left: 4px;" title="Gelesen von: ${[...new Set(r.readBy)].join(', ')}">
+                                <span style="color: #34b7f1; font-size: 0.9rem; margin-left: 4px; cursor: pointer;" onclick="showReadByPopup('${JSON.stringify([...new Set(r.readBy)]).replace(/'/g, "\\'")}')">
                                     <svg width="20" height="10" viewBox="0 0 22 11" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: baseline;">
                                         <path d="M4.5 9.5L1 6L2.4 4.6L4.5 6.7L9.1 2.1L10.5 3.5L4.5 9.5Z" fill="currentColor"/>
                                         <path d="M10.5 9.5L7 6L8.4 4.6L10.5 6.7L15.1 2.1L16.5 3.5L10.5 9.5Z" fill="currentColor"/>
                                     </svg>
                                 </span>
                             ` : r.notifiedAt ? `
-                                <span style="color: #34b7f1; font-size: 0.9rem; margin-left: 4px;" title="Benachrichtigung versendet">
+                                <span style="color: #34b7f1; font-size: 0.9rem; margin-left: 4px;">
                                     <svg width="14" height="10" viewBox="0 0 16 11" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: baseline;">
                                         <path d="M4.5 9.5L1 6L2.4 4.6L4.5 6.7L9.1 2.1L10.5 3.5L4.5 9.5Z" fill="currentColor"/>
                                         <path d="M9.5 9.5L6 6L7.4 4.6L9.5 6.7L14.1 2.1L15.5 3.5L9.5 9.5Z" fill="currentColor" opacity="0.8"/>
