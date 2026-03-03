@@ -609,6 +609,15 @@
             line-height: 1.4;
         }
 
+        .ios-prompt-link {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--primary);
+            text-decoration: underline;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
 
 
         .ios-prompt-close {
@@ -853,6 +862,7 @@
             <div class="ios-prompt-text">
                 Tippe auf das Teilen-Symbol und wähle<br>
                 <strong>„Zum Home-Bildschirm“</strong>
+                <div class="ios-prompt-link" onclick="markAsInstalled()">Schon installiert?</div>
             </div>
         </div>
         <button class="ios-prompt-close" onclick="dismissIosPrompt()">✕</button>
@@ -1996,6 +2006,13 @@
         window.shareByEmail = shareByEmail;
         window.dismissIosPrompt = () => { document.getElementById('ios-prompt').classList.remove('show'); localStorage.setItem('hc-ios-prompt-dismissed', 'true'); };
         window.dismissInstalledPrompt = () => { document.getElementById('installed-prompt').classList.remove('show'); localStorage.setItem('hc-installed-prompt-dismissed', 'true'); };
+
+        window.markAsInstalled = () => {
+            localStorage.setItem('hc-pwa-installed', 'true');
+            document.getElementById('ios-prompt').classList.remove('show');
+            // Show the "Installed" hint instead
+            setTimeout(() => { checkPwaPrompts(); }, 500);
+        };
 
         // --- SW Registration ---
         if ('serviceWorker' in navigator) {
